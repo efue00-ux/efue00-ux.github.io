@@ -61,7 +61,11 @@ function reset(){
 }
 document.getElementById('start').addEventListener('pointerup',reset);
 canvas.addEventListener('pointerdown',e=>{pointer.active=true;moveTo(e.clientX,e.clientY)});
-function moveTo(x,y){
+functfunction moveTo(x,y){
+
+  player.x=Math.max(25,Math.min(W-25,x));
+
+  player.y=Math.max(70,Math.min(H-35,y));
 
   player.x=Math.max(25,Math.min(W-25,x));
 
