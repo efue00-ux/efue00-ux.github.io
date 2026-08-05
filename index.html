@@ -1,221 +1,295 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NEON MECHA BATTLE</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>점프맵 1탄</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050816;font-family:Arial,sans-serif;touch-action:none}
-#game{position:fixed;inset:0;width:100%;height:100%;display:block}
-#hud{position:fixed;top:0;left:0;right:0;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top));display:flex;justify-content:space-between;color:#fff;font-weight:900;font-size:16px;text-shadow:0 2px 4px #000;pointer-events:none}
-#screen{z-index:10;pointer-events:auto;position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:white;pointer-events:none}
-.panel{background:rgba(5,8,22,.86);border:2px solid #25e7ff;border-radius:22px;padding:25px;box-shadow:0 0 35px #00d9ff55}
-h1{margin:0 0 8px;font-size:34px} p{margin:7px 0 18px;opacity:.85}
-button{touch-action:manipulation;pointer-events:auto;border:0;color:white;font-weight:900;background:#176bff;border-radius:16px;padding:15px 26px;font-size:18px;box-shadow:0 5px 0 #0b347e}
-button:active{transform:translateY(4px);box-shadow:0 1px 0 #0b347e}
-#fire{position:fixed;right:22px;bottom:25px;width:86px;height:86px;border-radius:50%;background:#ff3f69;border:3px solid white;font-size:14px;box-shadow:0 0 25px #ff3f69}
-#skill{position:fixed;right:22px;bottom:125px;width:74px;height:74px;border-radius:50%;background:#704cff;border:3px solid white;font-size:13px;opacity:.45}
-#tip{position:fixed;bottom:8px;left:0;right:0;text-align:center;color:#fff9;font-size:12px;pointer-events:none}
-.hidden{display:none!important}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  touch-action: none;
+}
+body {
+  overflow: hidden;
+  background: #87ceeb;
+  font-family: Arial, sans-serif;
+}
+#game {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(#87ceeb 0%, #dff6ff 70%);
+}
+#world {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.player {
+  position: absolute;
+  width: 35px;
+  height: 35px;
+  background: #ff4757;
+  border: 3px solid #fff;
+  border-radius: 10px;
+  z-index: 10;
+}
+.platform {
+  position: absolute;
+  height: 22px;
+  background: #2ed573;
+  border: 3px solid #1e9e52;
+  border-radius: 7px;
+}
+.goal {
+  position: absolute;
+  width: 55px;
+  height: 70px;
+  background: #ffd32a;
+  border: 4px solid #f39c12;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: bold;
+  padding-top: 20px;
+  z-index: 5;
+}
+#info {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,.55);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  z-index: 50;
+  font-size: 15px;
+}
+.controls {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+}
+.left-controls {
+  display: flex;
+  gap: 12px;
+}
+button {
+  width: 70px;
+  height: 70px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0,0,0,.55);
+  color: white;
+  font-size: 30px;
+  font-weight: bold;
+  -webkit-tap-highlight-color: transparent;
+}
+button:active {
+  background: rgba(0,0,0,.8);
+  transform: scale(.94);
+}
+#win {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 200;
+  color: white;
+  text-align: center;
+  padding-top: 30vh;
+}
+#win h1 {
+  font-size: 45px;
+  margin-bottom: 20px;
+}
+#restart {
+  border-radius: 15px;
+  width: 180px;
+  height: 60px;
+  font-size: 20px;
+  background: #2ed573;
+}
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
-<div id="hud"><span id="score">⭐ 0</span><span id="hp">❤️ 100</span></div>
-<div id="screen">
-  <div class="panel">
-    <h1>⚡ NEON MECHA</h1>
-    <p>메카를 움직여 적을 물리쳐라!</p>
-    <button id="start">게임 시작</button>
+<div id="game">
+  <div id="world">
+<div class="player" id="player"></div>
+
+<!-- 발판 -->
+
+<div class="platform" style="left:0%; top:85%; width:35%;"></div>
+<div class="platform" style="left:43%; top:73%; width:25%;"></div>
+<div class="platform" style="left:72%; top:61%; width:25%;"></div>
+<div class="platform" style="left:48%; top:49%; width:20%;"></div>
+<div class="platform" style="left:18%; top:37%; width:25%;"></div>
+<div class="platform" style="left:55%; top:25%; width:25%;"></div>
+<div class="platform" style="left:78%; top:13%; width:22%;"></div>
+<!-- 골인 -->
+<div class="goal" id="goal" style="left:84%; top:5%;">
+  GOAL
+</div>  
+     <div id="info">🏃 점프해서 GOAL까지 가세요!</div>
+   <div class="controls">
+    <div class="left-controls">
+      <button id="left">◀</button>
+      <button id="right">▶</button>
+    </div>
+  <button id="jump">⬆</button>
+   </div>
+    <div id="win">
+    <h1>🎉 CLEAR!</h1>
+    <p>점프맵을 클리어했습니다!</p>
+    <br>
+    <button id="restart">다시 하기</button>
   </div>
 </div>
-<button id="skill" class="hidden">⚡<br>필살기</button>
-<button id="fire" class="hidden">🔫<br>발사</button>
-<div id="tip" class="hidden">화면 왼쪽을 드래그해 이동 · 오른쪽 버튼으로 공격</div>
-
 <script>
-(function(){
-const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
-let W=0,H=0,D=1,running=false,last=0,score=0,spawn=0,shot=0,skill=0;
-let player={x:0,y:0,hp:100};
-let enemies=[],bullets=[],particles=[],pointer={active:false,x:0,y:0};
-
-function resize(){
- D=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight;
- canvas.width=Math.floor(W*D); canvas.height=Math.floor(H*D);
- canvas.style.width=W+'px'; canvas.style.height=H+'px';
- ctx.setTransform(D,0,0,D,0,0);
- if(!player.x){player.x=W/2;player.y=H*.72}
+const player = document.getElementById("player");
+const goal = document.getElementById("goal");
+const win = document.getElementById("win");
+const world = document.getElementById("world");
+let x = 40;
+let y = window.innerHeight * 0.75;
+let vx = 0;
+let vy = 0;
+let leftPressed = false;
+let rightPressed = false;
+let grounded = false;
+let gameOver = false;
+const speed = 4.5;
+const gravity = 0.65;
+const jumpPower = -12;
+const platforms = [...document.querySelectorAll(".platform")];
+function setPosition() {
+  player.style.left = x + "px";
+  player.style.top = y + "px";
 }
-addEventListener('resize',resize); resize();
-
-function reset(){
- score=0;spawn=0;shot=0;skill=0;player={x:W/2,y:H*.72,hp:100};
- enemies=[];bullets=[];particles=[];running=true;last=performance.now();
- document.getElementById('screen').classList.add('hidden');
- document.getElementById('skill').classList.remove('hidden');
- document.getElementById('fire').classList.remove('hidden');
- document.getElementById('tip').classList.remove('hidden');
- requestAnimationFrame(loop);
+function jump() {
+  if (grounded && !gameOver) {
+    vy = jumpPower;
+    grounded = false;
+  }
 }
-document.getElementById('start').addEventListener('pointerup',reset);
-
-function moveTo(x,y){
-
-  player.x=Math.max(25,Math.min(W-25,x));
-
-  player.y=Math.max(70,Math.min(H-35,y));
-
+function rect(el) {
+  return el.getBoundingClientRect();
 }
-function fire(){
- function fire(){
-
-  if(!running)return;
-
-  bullets.push({x:player.x,y:player.y-24,vy:-650,r:5});
-
+function update() {
+  if (gameOver) return;
+  if (leftPressed) vx = -speed;
+  else if (rightPressed) vx = speed;
+  else vx *= 0.8;
+  x += vx;
+  vy += gravity;
+  y += vy;
+  grounded = false;
+  // 화면 좌우 제한
+  if (x < 0) x = 0;
+  if (x > window.innerWidth - 35) {
+    x = window.innerWidth - 35;
+  }
+  // 발판 충돌
+  const playerLeft = x;
+  const playerRight = x + 35;
+  const playerBottom = y + 35;
+  for (const p of platforms) {
+    const r = rect(p);
+    const platformLeft = r.left;
+    const platformRight = r.right;
+    const platformTop = r.top;
+    if (
+      playerRight > platformLeft &&
+      playerLeft < platformRight &&
+      playerBottom >= platformTop &&
+      playerBottom <= platformTop + 25 &&
+      vy >= 0
+    ) {
+      y = platformTop - 35;
+      vy = 0;
+      grounded = true;
+    }
+  }
+  // 골인
+  const g = rect(goal);
+  if (
+    playerRight > g.left &&
+    playerLeft < g.right &&
+    playerBottom > g.top &&
+    y < g.bottom
+  ) {
+    win.style.display = "block";
+    gameOver = true;
+  }
+  // 떨어짐
+  if (y > window.innerHeight + 100) {
+    reset();
+  }
+  setPosition();
+  requestAnimationFrame(update);
 }
-
-document.getElementById('fire').onpointerdown=e=>{
-
+function reset() {
+  x = 40;
+  y = window.innerHeight * 0.75;
+  vx = 0;
+  vy = 0;
+  grounded = false;
+  setPosition();
+}
+function restart() {
+  win.style.display = "none";
+  gameOver = false;
+  reset();
+  requestAnimationFrame(update);
+}
+// 버튼 조작
+function holdButton(button, down, up) {
+  button.addEventListener("touchstart", e => {
+    e.preventDefault();
+    down();
+  });
+  button.addEventListener("touchend", e => {
+    e.preventDefault();
+    up();
+  });
+  button.addEventListener("mousedown", e => {
+    e.preventDefault();
+    down();
+  });
+  button.addEventListener("mouseup", e => {
+    e.preventDefault();
+    up();
+  });
+}
+holdButton(
+  document.getElementById("left"),
+  () => leftPressed = true,
+  () => leftPressed = false
+);
+holdButton(
+  document.getElementById("right"),
+  () => rightPressed = true,
+  () => rightPressed = false
+);
+document.getElementById("jump").addEventListener("touchstart", e => {
   e.preventDefault();
-
-  fire();
-
-};
-
-canvas.addEventListener('pointerdown',e=>{
-
+  jump();
+});
+document.getElementById("jump").addEventListener("mousedown", e => {
   e.preventDefault();
-
-  pointer.active=true;
-
-  const r=canvas.getBoundingClientRect();
-
-  moveTo((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height);
-
+  jump();
 });
-
-canvas.addEventListener('pointermove',e=>{
-
-  e.preventDefault();
-
-  if(!pointer.active)return;
-
-  const r=canvas.getBoundingClientRect();
-
-  moveTo((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height);
-
-});
-
-canvas.addEventListener('pointerup',e=>{
-
-  e.preventDefault();
-
-  pointer.active=false;
-
-});
-
-canvas.addEventListener('pointercancel',e=>{
-
-  pointer.active=false;
-
-});
-
-  e.preventDefault();
-
-  pointer.active=false;
-
-});
-
-canvas.addEventListener('pointercancel',e=>{
-
-  pointer.active=false;
-
-});
-
-function moveTo(x,y){
-
-  player.x=Math.max(25,Math.min(W-25,x));
-
-  player.y=Math.max(70,Math.min(H-35,y));
-
-}
-document.getElementById('skill').onpointerdown=e=>{
- e.preventDefault();
- if(skill<100)return;
- skill=0;
- enemies.forEach(e=>{for(let i=0;i<8;i++)particles.push({x:e.x,y:e.y,vx:(Math.random()-.5)*280,vy:(Math.random()-.5)*280,t:.5});e.hp=0});
- score+=enemies.length*20;
-};
-
-function spawnEnemy(){
- const r=16+Math.random()*13;
- enemies.push({x:r+Math.random()*(W-r*2),y:-r,r,hp:1+Math.floor(score/150),speed:80+Math.random()*80+score*.08});
-}
-function burst(x,y,n=10){
- for(let i=0;i<n;i++)particles.push({x,y,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*240,t:.45});
-}
-function update(dt){
- if(++shot>=.18*60){shot=0;fire()}
- spawn+=dt;
- if(spawn>Math.max(.35,1.05-score/700)){spawn=0;spawnEnemy()}
- for(const b of bullets)b.y+=b.vy*dt;
- bullets=bullets.filter(b=>b.y>-30);
- for(const e of enemies)e.y+=e.speed*dt;
- for(const e of enemies){
-   for(const b of bullets){
-     if(Math.hypot(e.x-b.x,e.y-b.y)<e.r+b.r){
-       b.y=-999;e.hp--;
-       if(e.hp<=0){score+=10;skill=Math.min(100,skill+10);burst(e.x,e.y)}
-     }
-   }
-   if(Math.hypot(e.x-player.x,e.y-player.y)<e.r+19){
-     e.hp=0;player.hp-=20;burst(player.x,player.y,15);
-   }
- }
- enemies=enemies.filter(e=>e.hp>0&&e.y<H+50);
- for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.94;p.vy*=.94;p.t-=dt}
- particles=particles.filter(p=>p.t>0);
- if(player.hp<=0){running=false;gameOver()}
- document.getElementById('score').textContent='⭐ '+score;
- document.getElementById('hp').textContent='❤️ '+Math.max(0,player.hp);
- document.getElementById('skill').style.opacity=skill>=100?1:.45;
-}
-function gameOver(){
- document.getElementById('screen').innerHTML='<div class="panel"><h1>💥 GAME OVER</h1><p>최종 점수: '+score+'</p><button id="again">다시 하기</button></div>';
- document.getElementById('screen').classList.remove('hidden');
- document.getElementById('again').onclick=reset;
- document.getElementById('skill').classList.add('hidden');
- document.getElementById('fire').classList.add('hidden');
- document.getElementById('tip').classList.add('hidden');
-}
-function draw(){
- ctx.clearRect(0,0,W,H);
- const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#101b46');g.addColorStop(1,'#040611');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- ctx.strokeStyle='#14234b';ctx.lineWidth=1;
- for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
- for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
- for(const b of bullets){ctx.fillStyle='#7df9ff';ctx.shadowBlur=16;ctx.shadowColor='#00e5ff';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill()}
- ctx.shadowBlur=0;
- for(const e of enemies){
-   ctx.fillStyle='#ff3868';ctx.shadowBlur=18;ctx.shadowColor='#ff1744';
-   ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(e.x-5,e.y-3,3,0,7);ctx.arc(e.x+5,e.y-3,3,0,7);ctx.fill();
- }
- ctx.fillStyle='#19ddff';ctx.shadowBlur=22;ctx.shadowColor='#00e5ff';
- ctx.beginPath();ctx.roundRect(player.x-19,player.y-19,38,38,9);ctx.fill();ctx.shadowBlur=0;
- ctx.fillStyle='#09152b';ctx.fillRect(player.x-12,player.y-6,24,12);
- ctx.fillStyle='#fff';ctx.fillRect(player.x-8,player.y-4,5,4);ctx.fillRect(player.x+3,player.y-4,5,4);
- for(const p of particles){ctx.globalAlpha=Math.max(0,p.t/.45);ctx.fillStyle='#66efff';ctx.beginPath();ctx.arc(p.x,p.y,3,0,7);ctx.fill()}ctx.globalAlpha=1;
-}
-function loop(now){
- if(!running)return;
- const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);draw();requestAnimationFrame(loop);
-}
-draw();
-})();
+document.getElementById("restart").addEventListener("click", restart);
+setPosition();
+requestAnimationFrame(update);
 </script>
 </body>
 </html>
