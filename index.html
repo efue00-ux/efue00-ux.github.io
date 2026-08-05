@@ -9,10 +9,10 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050816;font-family:Arial,sans-serif;touch-action:none}
 #game{position:fixed;inset:0;width:100%;height:100%;display:block}
 #hud{position:fixed;top:0;left:0;right:0;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top));display:flex;justify-content:space-between;color:#fff;font-weight:900;font-size:16px;text-shadow:0 2px 4px #000;pointer-events:none}
-#screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:white;pointer-events:none}
+#screen{z-index:10;pointer-events:auto;position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:white;pointer-events:none}
 .panel{background:rgba(5,8,22,.86);border:2px solid #25e7ff;border-radius:22px;padding:25px;box-shadow:0 0 35px #00d9ff55}
 h1{margin:0 0 8px;font-size:34px} p{margin:7px 0 18px;opacity:.85}
-button{border:0;color:white;font-weight:900;background:#176bff;border-radius:16px;padding:15px 26px;font-size:18px;box-shadow:0 5px 0 #0b347e}
+button{touch-action:manipulation;pointer-events:auto;border:0;color:white;font-weight:900;background:#176bff;border-radius:16px;padding:15px 26px;font-size:18px;box-shadow:0 5px 0 #0b347e}
 button:active{transform:translateY(4px);box-shadow:0 1px 0 #0b347e}
 #fire{position:fixed;right:22px;bottom:25px;width:86px;height:86px;border-radius:50%;background:#ff3f69;border:3px solid white;font-size:14px;box-shadow:0 0 25px #ff3f69}
 #skill{position:fixed;right:22px;bottom:125px;width:74px;height:74px;border-radius:50%;background:#704cff;border:3px solid white;font-size:13px;opacity:.45}
@@ -59,9 +59,7 @@ function reset(){
  document.getElementById('tip').classList.remove('hidden');
  requestAnimationFrame(loop);
 }
-document.getElementById('start').onclick=reset;
-
-function moveTo(x,y){player.x=Math.max(25,Math.min(W-25,x));player.y=Math.max(70,Math.min(H-35,y))}
+document.getElementById('start').addEventListener('pointerup',reset);
 canvas.addEventListener('pointerdown',e=>{pointer.active=true;moveTo(e.clientX,e.clientY)});
 canvas.addEventListener('pointermove',e=>{if(pointer.active)moveTo(e.clientX,e.clientY)});
 addEventListener('pointerup',()=>pointer.active=false);
