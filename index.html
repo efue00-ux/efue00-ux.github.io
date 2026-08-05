@@ -69,11 +69,23 @@ function moveTo(x,y){
 
 }
 function fire(){
- if(!running)return;
- bullets.push({x:player.x,y:player.y-24,vy:-650,r:5});
+ function fire(){
+
+  if(!running)return;
+
+  bullets.push({x:player.x,y:player.y-24,vy:-650,r:5});
+
 }
-document.getElementById('fire').onpointerdown=e=>{e.preventDefault();fire()};
-  canvas.addEventListener('pointerdown',e=>{
+
+document.getElementById('fire').onpointerdown=e=>{
+
+  e.preventDefault();
+
+  fire();
+
+};
+
+canvas.addEventListener('pointerdown',e=>{
 
   e.preventDefault();
 
@@ -98,6 +110,18 @@ canvas.addEventListener('pointermove',e=>{
 });
 
 canvas.addEventListener('pointerup',e=>{
+
+  e.preventDefault();
+
+  pointer.active=false;
+
+});
+
+canvas.addEventListener('pointercancel',e=>{
+
+  pointer.active=false;
+
+});
 
   e.preventDefault();
 
