@@ -60,42 +60,64 @@ function reset(){
  requestAnimationFrame(loop);
 }
 document.getElementById('start').addEventListener('pointerup',reset);
-canvas.addEventListener('pointerdown',e=>{pointer.active=true;moveTo(e.clientX,e.clientY)});
-functfunction moveTo(x,y){
 
-  player.x=Math.max(25,Math.min(W-25,x));
-
-  player.y=Math.max(70,Math.min(H-35,y));
+function moveTo(x,y){
 
   player.x=Math.max(25,Math.min(W-25,x));
 
   player.y=Math.max(70,Math.min(H-35,y));
 
 }
+function fire(){
+ if(!running)return;
+ bullets.push({x:player.x,y:player.y-24,vy:-650,r:5});
+}
+document.getElementById('fire').onpointerdown=e=>{e.preventDefault();fire()};
+  canvas.addEventListener('pointerdown',e=>{
 
-canvas.addEventListener('pointerdown',e=>{
+  e.preventDefault();
 
   pointer.active=true;
 
-  moveTo(e.clientX,e.clientY);
+  const r=canvas.getBoundingClientRect();
+
+  moveTo((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height);
 
 });
 
 canvas.addEventListener('pointermove',e=>{
 
-  if(pointer.active) moveTo(e.clientX,e.clientY);
+  e.preventDefault();
+
+  if(!pointer.active)return;
+
+  const r=canvas.getBoundingClientRect();
+
+  moveTo((e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height);
 
 });
 
-addEventListener('pointerup',()=>{
+canvas.addEventListener('pointerup',e=>{
+
+  e.preventDefault();
 
   pointer.active=false;
 
 });
- if(!running)return;
- bullets.push({x:player.x,y:player.y-24,vy:-650,r:5});
+
+canvas.addEventListener('pointercancel',e=>{
+
+  pointer.active=false;
+
+});
+
+function moveTo(x,y){
+
+  player.x=Math.max(25,Math.min(W-25,x));
+
+  player.y=Math.max(70,Math.min(H-35,y));
+
 }
-document.getElementById('fire').onpointerdown=e=>{e.preventDefault();fire()};
 document.getElementById('skill').onpointerdown=e=>{
  e.preventDefault();
  if(skill<100)return;
