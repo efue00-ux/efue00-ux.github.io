@@ -2,21 +2,39 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>점프맵</title>
-</head>
-<body style="margin:0;background:skyblue">
-<canvas id="game"></canvas>
-<script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-canvas.width = innerWidth;
-canvas.height = innerHeight;
-ctx.fillStyle = "skyblue";
-ctx.fillRect(0,0,canvas.width,canvas.height);
-ctx.fillStyle = "red";
-ctx.fillRect(100,300,50,50);
-ctx.fillStyle = "green";
-ctx.fillRect(50,400,300,30);
-</script>
-</body>
-</html>
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  background:#87ceeb;
+  touch-action:none;
+}
+canvas{
+  display:block;
+}
+#level{
+  position:fixed;
+  top:15px;
+  left:15px;
+  padding:10px 16px;
+  background:#0008;
+  color:white;
+  border-radius:12px;
+  font:bold 20px Arial;
+}
+#buttons{
+  position:fixed;
+  bottom:20px;
+  left:0;
+  right:0;
+  display:flex;
+  justify-content:space-between;
+  padding:0 20px;
+}
+button{
+  width:70px;
+  height:70px;
+  
