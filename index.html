@@ -1,295 +1,590 @@
 <!DOCTYPE html>
+
 <html lang="ko">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>점프맵 1탄</title>
+
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+
+<title>점프맵 챌린지</title>
+
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  touch-action: none;
-}
-body {
-  overflow: hidden;
-  background: #87ceeb;
-  font-family: Arial, sans-serif;
-}
-#game {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background: linear-gradient(#87ceeb 0%, #dff6ff 70%);
-}
-#world {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-}
-.player {
-  position: absolute;
-  width: 35px;
-  height: 35px;
-  background: #ff4757;
-  border: 3px solid #fff;
-  border-radius: 10px;
-  z-index: 10;
-}
-.platform {
-  position: absolute;
-  height: 22px;
-  background: #2ed573;
-  border: 3px solid #1e9e52;
-  border-radius: 7px;
-}
-.goal {
-  position: absolute;
-  width: 55px;
-  height: 70px;
-  background: #ffd32a;
-  border: 4px solid #f39c12;
-  border-radius: 10px;
-  text-align: center;
-  font-weight: bold;
-  padding-top: 20px;
-  z-index: 5;
-}
-#info {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,.55);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  z-index: 50;
-  font-size: 15px;
-}
-.controls {
-  position: fixed;
-  bottom: 20px;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 20px;
-  z-index: 100;
-}
-.left-controls {
-  display: flex;
-  gap: 12px;
-}
-button {
-  width: 70px;
-  height: 70px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0,0,0,.55);
-  color: white;
-  font-size: 30px;
-  font-weight: bold;
-  -webkit-tap-highlight-color: transparent;
-}
-button:active {
-  background: rgba(0,0,0,.8);
-  transform: scale(.94);
-}
-#win {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.75);
-  z-index: 200;
-  color: white;
-  text-align: center;
-  padding-top: 30vh;
-}
-#win h1 {
-  font-size: 45px;
-  margin-bottom: 20px;
-}
-#restart {
-  border-radius: 15px;
-  width: 180px;
-  height: 60px;
-  font-size: 20px;
-  background: #2ed573;
-}
-</style>
-</head>
-<body>
-<div id="game">
-  <div id="world">
-<div class="player" id="player"></div>
 
-<!-- 발판 -->
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
-<div class="platform" style="left:0%; top:85%; width:35%;"></div>
-<div class="platform" style="left:43%; top:73%; width:25%;"></div>
-<div class="platform" style="left:72%; top:61%; width:25%;"></div>
-<div class="platform" style="left:48%; top:49%; width:20%;"></div>
-<div class="platform" style="left:18%; top:37%; width:25%;"></div>
-<div class="platform" style="left:55%; top:25%; width:25%;"></div>
-<div class="platform" style="left:78%; top:13%; width:22%;"></div>
-<!-- 골인 -->
-<div class="goal" id="goal" style="left:84%; top:5%;">
-  GOAL
-</div>  
-     <div id="info">🏃 점프해서 GOAL까지 가세요!</div>
-   <div class="controls">
-    <div class="left-controls">
-      <button id="left">◀</button>
-      <button id="right">▶</button>
-    </div>
-  <button id="jump">⬆</button>
-   </div>
-    <div id="win">
-    <h1>🎉 CLEAR!</h1>
-    <p>점프맵을 클리어했습니다!</p>
-    <br>
-    <button id="restart">다시 하기</button>
-  </div>
-</div>
-<script>
-const player = document.getElementById("player");
-const goal = document.getElementById("goal");
-const win = document.getElementById("win");
-const world = document.getElementById("world");
-let x = 40;
-let y = window.innerHeight * 0.75;
-let vx = 0;
-let vy = 0;
-let leftPressed = false;
-let rightPressed = false;
-let grounded = false;
-let gameOver = false;
-const speed = 4.5;
-const gravity = 0.65;
-const jumpPower = -12;
-const platforms = [...document.querySelectorAll(".platform")];
-function setPosition() {
-  player.style.left = x + "px";
-  player.style.top = y + "px";
+html,body{
+
+margin:0;padding:0;width:100%;height:100%;
+
+overflow:hidden;background:#111827;
+
+font-family:Arial,sans-serif;touch-action:none
+
 }
-function jump() {
-  if (grounded && !gameOver) {
-    vy = jumpPower;
-    grounded = false;
-  }
+
+#game{display:block;width:100%;height:100%}
+
+#ui{
+
+position:fixed;top:12px;left:12px;right:12px;
+
+display:flex;justify-content:space-between;
+
+pointer-events:none;z-index:5
+
 }
-function rect(el) {
-  return el.getBoundingClientRect();
+
+.info{
+
+background:rgba(0,0,0,.65);color:white;
+
+padding:9px 13px;border-radius:12px;
+
+font-weight:bold;font-size:15px
+
 }
-function update() {
-  if (gameOver) return;
-  if (leftPressed) vx = -speed;
-  else if (rightPressed) vx = speed;
-  else vx *= 0.8;
-  x += vx;
-  vy += gravity;
-  y += vy;
-  grounded = false;
-  // 화면 좌우 제한
-  if (x < 0) x = 0;
-  if (x > window.innerWidth - 35) {
-    x = window.innerWidth - 35;
-  }
-  // 발판 충돌
-  const playerLeft = x;
-  const playerRight = x + 35;
-  const playerBottom = y + 35;
-  for (const p of platforms) {
-    const r = rect(p);
-    const platformLeft = r.left;
-    const platformRight = r.right;
-    const platformTop = r.top;
-    if (
-      playerRight > platformLeft &&
-      playerLeft < platformRight &&
-      playerBottom >= platformTop &&
-      playerBottom <= platformTop + 25 &&
-      vy >= 0
-    ) {
-      y = platformTop - 35;
-      vy = 0;
-      grounded = true;
-    }
-  }
-  // 골인
-  const g = rect(goal);
-  if (
-    playerRight > g.left &&
-    playerLeft < g.right &&
-    playerBottom > g.top &&
-    y < g.bottom
-  ) {
-    win.style.display = "block";
-    gameOver = true;
-  }
-  // 떨어짐
-  if (y > window.innerHeight + 100) {
-    reset();
-  }
-  setPosition();
-  requestAnimationFrame(update);
+
+#message{
+
+position:fixed;left:50%;top:42%;
+
+transform:translate(-50%,-50%);
+
+color:white;background:rgba(0,0,0,.8);
+
+padding:20px 28px;border-radius:18px;
+
+font-size:25px;font-weight:bold;
+
+text-align:center;display:none;z-index:10
+
 }
-function reset() {
-  x = 40;
-  y = window.innerHeight * 0.75;
-  vx = 0;
-  vy = 0;
-  grounded = false;
-  setPosition();
+
+#controls{
+
+position:fixed;bottom:20px;left:0;right:0;
+
+display:flex;justify-content:space-between;
+
+padding:0 18px;z-index:6;pointer-events:none
+
 }
-function restart() {
-  win.style.display = "none";
-  gameOver = false;
-  reset();
-  requestAnimationFrame(update);
+
+.controlGroup{display:flex;gap:12px}
+
+button{
+
+width:68px;height:68px;border:0;border-radius:20px;
+
+background:rgba(0,0,0,.55);color:white;
+
+font-size:27px;font-weight:bold;
+
+pointer-events:auto;user-select:none
+
 }
-// 버튼 조작
-function holdButton(button, down, up) {
-  button.addEventListener("touchstart", e => {
-    e.preventDefault();
-    down();
-  });
-  button.addEventListener("touchend", e => {
-    e.preventDefault();
-    up();
-  });
-  button.addEventListener("mousedown", e => {
-    e.preventDefault();
-    down();
-  });
-  button.addEventListener("mouseup", e => {
-    e.preventDefault();
-    up();
-  });
-}
-holdButton(
-  document.getElementById("left"),
-  () => leftPressed = true,
-  () => leftPressed = false
+
+button:active{transform:scale(.92)}
+
+#restart{
+
+position:fixed;top:55px;right:12px;
+
+width:auto;height:auto;padding:8px 12px;
+
+font-size:14px;border-radius:10px;z-index:7
+  function drawPlatform(p){
+
+const x=p.x-cameraX;
+
+if(x+p.w<0||x>W)return;
+
+ctx.fillStyle=p.moving?"#f59e0b":"#22c55e";
+
+ctx.fillRect(
+
+x,
+
+p.y,
+
+p.w,
+
+p.h
+
 );
-holdButton(
-  document.getElementById("right"),
-  () => rightPressed = true,
-  () => rightPressed = false
+
+ctx.fillStyle="rgba(0,0,0,.18)";
+
+ctx.fillRect(
+
+x,
+
+p.y+p.h-5,
+
+p.w,
+
+5
+
 );
-document.getElementById("jump").addEventListener("touchstart", e => {
-  e.preventDefault();
-  jump();
+
+}
+
+function drawSpikes(){
+
+ctx.fillStyle="#ef4444";
+
+for(const s of spikes){
+
+const x=s.x-cameraX;
+
+if(x+s.w<0||x>W)continue;
+
+ctx.beginPath();
+
+ctx.moveTo(x,s.y+s.h);
+
+ctx.lineTo(
+
+x+s.w/2,
+
+s.y
+
+);
+
+ctx.lineTo(
+
+x+s.w,
+
+s.y+s.h
+
+);
+
+ctx.closePath();
+
+ctx.fill();
+
+}
+
+}
+
+function drawGoal(){
+
+const x=goal.x-cameraX;
+
+ctx.fillStyle="#374151";
+
+ctx.fillRect(
+
+x,
+
+goal.y,
+
+6,
+
+goal.h
+
+);
+
+ctx.fillStyle="#facc15";
+
+ctx.beginPath();
+
+ctx.moveTo(
+
+x+6,
+
+goal.y
+
+);
+
+ctx.lineTo(
+
+x+45,
+
+goal.y+15
+
+);
+
+ctx.lineTo(
+
+x+6,
+
+goal.y+30
+
+);
+
+ctx.closePath();
+
+ctx.fill();
+
+}
+
+function drawPlayer(){
+
+const x=player.x-cameraX;
+
+ctx.fillStyle="#ef4444";
+
+ctx.fillRect(
+
+x,
+
+player.y,
+
+player.w,
+
+player.h
+
+);
+
+ctx.fillStyle="white";
+
+ctx.fillRect(
+
+x+7,
+
+player.y+8,
+
+7,
+
+7
+
+);
+
+ctx.fillRect(
+
+x+20,
+
+player.y+8,
+
+7,
+
+7
+
+);
+
+ctx.fillStyle="#111827";
+
+ctx.fillRect(
+
+x+9,
+
+player.y+10,
+
+3,
+
+4
+
+);
+
+ctx.fillRect(
+
+x+22,
+
+player.y+10,
+
+3,
+
+4
+
+);
+
+}
+
+function draw(){
+
+drawBackground();
+
+for(const p of platforms){
+
+drawPlatform(p);
+
+}
+
+drawSpikes();
+
+drawGoal();
+
+drawPlayer();
+
+document.getElementById("levelText").textContent=
+
+"LEVEL "+level;
+
+}
+
+function loop(){
+
+updatePlatforms();
+
+updatePlayer();
+
+draw();
+
+requestAnimationFrame(loop);
+
+}
+
+loop();
+
+// 키보드
+
+window.addEventListener("keydown",function(e){
+
+if(
+
+e.key==="ArrowLeft"||
+
+e.key==="a"
+
+){
+
+keys.left=true;
+
+}
+
+if(
+
+e.key==="ArrowRight"||
+
+e.key==="d"
+
+){
+
+keys.right=true;
+
+}
+
+if(
+
+e.key==="ArrowUp"||
+
+e.key===" "||
+
+e.key==="w"
+
+){
+
+jumpPressed=true;
+
+}
+
 });
-document.getElementById("jump").addEventListener("mousedown", e => {
-  e.preventDefault();
-  jump();
+
+window.addEventListener("keyup",function(e){
+
+if(
+
+e.key==="ArrowLeft"||
+
+e.key==="a"
+
+){
+
+keys.left=false;
+
+}
+
+if(
+
+e.key==="ArrowRight"||
+
+e.key==="d"
+
+){
+
+keys.right=false;
+
+}
+
 });
-document.getElementById("restart").addEventListener("click", restart);
-setPosition();
-requestAnimationFrame(update);
+
+// 모바일 버튼
+
+function holdButton(button,key){
+
+button.addEventListener(
+
+"touchstart",
+
+function(e){
+
+e.preventDefault();
+
+keys[key]=true;
+
+},
+
+{passive:false}
+
+);
+
+button.addEventListener(
+
+"touchend",
+
+function(e){
+
+e.preventDefault();
+
+keys[key]=false;
+
+},
+
+{passive:false}
+
+);
+
+button.addEventListener(
+
+"touchcancel",
+
+function(){
+
+keys[key]=false;
+
+}
+
+);
+
+}
+
+holdButton(
+
+document.getElementById("left"),
+
+"left"
+
+);
+
+holdButton(
+
+document.getElementById("right"),
+
+"right"
+
+);
+
+document.getElementById("jump")
+
+.addEventListener(
+
+"touchstart",
+
+function(e){
+
+e.preventDefault();
+
+jumpPressed=true;
+
+},
+
+{passive:false}
+
+);
+
+// 마우스
+
+document.getElementById("left")
+
+.addEventListener(
+
+"mousedown",
+
+function(){
+
+keys.left=true;
+
+}
+
+);
+
+document.getElementById("left")
+
+.addEventListener(
+
+"mouseup",
+
+function(){
+
+keys.left=false;
+
+}
+
+);
+
+document.getElementById("right")
+
+.addEventListener(
+
+"mousedown",
+
+function(){
+
+keys.right=true;
+
+}
+
+);
+
+document.getElementById("right")
+
+.addEventListener(
+
+"mouseup",
+
+function(){
+
+keys.right=false;
+
+}
+
+);
+
+document.getElementById("jump")
+
+.addEventListener(
+
+"mousedown",
+
+function(){
+
+jumpPressed=true;
+
+}
+
+);
+
+// 다시 시작
+
+document.getElementById("restart")
+
+.addEventListener(
+
+"click",
+
+function(){
+
+level=1;
+
+deaths=0;
+
+document.getElementById(
+
+"deathText"
+
+).textContent="💀 0";
+
+createLevel();
+
+}
+
+);
+
 </script>
+
 </body>
+
 </html>
