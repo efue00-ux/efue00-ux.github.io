@@ -1,325 +1,349 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF\-8"\>
-<meta name="viewport" content="width=device\-width, initial\-scale=1\.0, user\-scalable=no"\>
-<title\>점프맵</title\>
-<style\>
-html,body\{
-  margin:0;
-  padding:0;
-  overflow:hidden;
-  background:\#87ceeb;
-  touch\-action:none;
-\}
-canvas\{
-  display:block;
-\}
-\#level\{
-  position:fixed;
-  top:15px;
-  left:15px;
-  padding:10px 16px;
-  background:\#0008;
-  color:white;
-  border\-radius:12px;
-  font:bold 20px Arial;
-\}
-\#buttons\{
-  position:fixed;
-  bottom:20px;
-  left:0;
-  right:0;
-  display:flex;
-  justify\-content:space\-between;
-  padding:0 20px;
-\}
-button\{
-  width:70px;
-  height:70px;
-  border:0;
-  border\-radius:20px;
-  background:\#0009;
-  color:white;
-  font\-size:28px;
-\}
-</style\>
-</head\>
-<body\>
-<canvas id="game"\></canvas\>
-<div id="level"\>
-LEVEL 1
-</div\>
-<div id="buttons"\>
-  <div\>
-    <button id="left"\>◀</button\>
-    <button id="right"\>▶</button\>
-  </div\>
-  <button id="jump"\>▲</button\>
-</div\>
-<script\>
-const canvas = document\.getElementById\("game"\);
-const ctx = canvas\.getContext\("2d"\);
-let W = innerWidth;
-let H = innerHeight;
-canvas\.width = W;
-canvas\.height = H;
-window\.addEventListener\("resize",\(\)=\>\{
-  W = innerWidth;
-  H = innerHeight;
-  canvas\.width = W;
-  canvas\.height = H;
-\}\);
-const player = \{
-  x:80,
-  y:300,
-  w:36,
-  h:36,
-  vx:0,
-  vy:0,
-  speed:0\.6,
-  jumpPower:\-13,
-  ground:false
-\};
-let platforms = &#91;&#93;;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>점프맵</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #87ceeb;
+  touch-action: none;
+}
+
+canvas {
+  display: block;
+}
+
+#level {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border-radius: 12px;
+  font: bold 20px Arial;
+}
+
+#buttons {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+button {
+  width: 70px;
+  height: 70px;
+  border: 0;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.55);
+  color: white;
+  font-size: 28px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="level">LEVEL 1</div>
+
+<div id="buttons">
+  <div>
+    <button id="left">◀</button>
+    <button id="right">▶</button>
+  </div>
+
+  <button id="jump">▲</button>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W = window.innerWidth;
+let H = window.innerHeight;
+
+canvas.width = W;
+canvas.height = H;
+
+window.addEventListener("resize", function() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+
+  canvas.width = W;
+  canvas.height = H;
+});
+
+const player = {
+  x: 70,
+  y: 200,
+  w: 36,
+  h: 36,
+  vx: 0,
+  vy: 0,
+  ground: false
+};
+
+let platforms = [];
 let cameraX = 0;
 let level = 1;
+
 let left = false;
 let right = false;
 let jump = false;
-function createLevel\(\)\{
-  platforms = &#91;&#93;;
+
+function createLevel() {
+  platforms = [];
+
   let x = 0;
-  let y = H \- 80;
-  platforms\.push\(\{
-    x:0,
-    y:y,
-    w:260,
-    h:30
-  \}\);
-  for\(let i=0;i<12;i\+\+\)\{
-    x \+= 130;
-    y \+= Math\.random\(\)\*100 \- 50;
-    y = Math\.max\(
-      150,
-      Math\.min\(H\-100,y\)
-    \);
-    platforms\.push\(\{
-      x:x,
-      y:y,
-      w:120,
-      h:30
-    \}\);
-  \}
-  player\.x = 70;
-  player\.y = H \- 180;
-  player\.vx = 0;
-  player\.vy = 0;
-\}
-createLevel\(\);
-function update\(\)\{
-  if\(left\)\{
-    player\.vx \-= player\.speed;
-  \}
-  if\(right\)\{
-    player\.vx \+= player\.speed;
-  \}
-  if\(\!left && \!right\)\{
-    player\.vx \*= 0\.8;
-  \}
-  player\.vx = Math\.max\(
-    \-7,
-    Math\.min\(7,player\.vx\)
-  \);
-  if\(jump && player\.ground\)\{
-    player\.vy = player\.jumpPower;
-    player\.ground = false;
-  \}
+  let y = H - 80;
+
+  platforms.push({
+    x: 0,
+    y: y,
+    w: 260,
+    h: 30
+  });
+
+  for (let i = 0; i < 12; i++) {
+    x += 130;
+
+    y += Math.random() * 100 - 50;
+
+    if (y < 150) {
+      y = 150;
+    }
+
+    if (y > H - 100) {
+      y = H - 100;
+    }
+
+    platforms.push({
+      x: x,
+      y: y,
+      w: 120,
+      h: 30
+    });
+  }
+
+  player.x = 70;
+  player.y = H - 180;
+  player.vx = 0;
+  player.vy = 0;
+}
+
+createLevel();
+
+function update() {
+
+  if (left) {
+    player.vx -= 0.6;
+  }
+
+  if (right) {
+    player.vx += 0.6;
+  }
+
+  if (!left && !right) {
+    player.vx *= 0.8;
+  }
+
+  if (player.vx > 7) {
+    player.vx = 7;
+  }
+
+  if (player.vx < -7) {
+    player.vx = -7;
+  }
+
+  if (jump && player.ground) {
+    player.vy = -13;
+    player.ground = false;
+  }
+
   jump = false;
-  player\.vy \+= 0\.7;
-  let oldY = player\.y;
-  player\.x \+= player\.vx;
-  player\.y \+= player\.vy;
-  player\.ground = false;
-  for\(const p of platforms\)\{
-    if\(
-      player\.vy \>= 0 &&
-      oldY \+ player\.h <= p\.y &&
-      player\.y \+ player\.h \>= p\.y &&
-      player\.x \+ player\.w \> p\.x &&
-      player\.x < p\.x \+ p\.w
-    \)\{
-      player\.y = p\.y \- player\.h;
-      player\.vy = 0;
-      player\.ground = true;
-    \}
-  \}
-  if\(player\.y \> H \+ 200\)\{
-    createLevel\(\);
-  \}
-  cameraX = player\.x \- W \* 0\.3;
-  if\(cameraX < 0\)\{
+
+  player.vy += 0.7;
+
+  const oldY = player.y;
+
+  player.x += player.vx;
+  player.y += player.vy;
+
+  player.ground = false;
+
+  for (const p of platforms) {
+
+    if (
+      player.vy >= 0 &&
+      oldY + player.h <= p.y &&
+      player.y + player.h >= p.y &&
+      player.x + player.w > p.x &&
+      player.x < p.x + p.w
+    ) {
+
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.ground = true;
+    }
+  }
+
+  if (player.y > H + 200) {
+    createLevel();
+  }
+
+  cameraX = player.x - W * 0.3;
+
+  if (cameraX < 0) {
     cameraX = 0;
-  \}
-  const last =
-    platforms&#91;platforms\.length\-1&#93;;
-  if\(
-    player\.x \>
-    last\.x \+ last\.w \- 20
-  \)\{
-    level\+\+;
-    document\.getElementById\(
-      "level"
-    \)\.textContent =
-      "LEVEL " \+ level;
-    createLevel\(\);
-  \}
-\}
-function draw\(\)\{
-  ctx\.fillStyle = "\#87ceeb";
-  ctx\.fillRect\(
-    0,
-    0,
-    W,
-    H
-  \);
-  ctx\.fillStyle = "white";
-  ctx\.beginPath\(\);
-  ctx\.arc\(
-    100,
-    80,
-    30,
-    0,
-    Math\.PI\*2
-  \);
-  ctx\.arc\(
-    140,
-    70,
-    40,
-    0,
-    Math\.PI\*2
-  \);
-  ctx\.arc\(
-    180,
-    80,
-    25,
-    0,
-    Math\.PI\*2
-  \);
-  ctx\.fill\(\);
-  for\(const p of platforms\)\{
-    ctx\.fillStyle = "\#22c55e";
-    ctx\.fillRect\(
-      p\.x \- cameraX,
-      p\.y,
-      p\.w,
-      p\.h
-    \);
-  \}
-  ctx\.fillStyle = "\#ef4444";
-  ctx\.fillRect\(
-    player\.x \- cameraX,
-    player\.y,
-    player\.w,
-    player\.h
-  \);
-  ctx\.fillStyle = "white";
-  ctx\.fillRect\(
-    player\.x \- cameraX \+ 7,
-    player\.y \+ 8,
+  }
+
+  const last = platforms[platforms.length - 1];
+
+  if (player.x > last.x + last.w - 20) {
+
+    level++;
+
+    document.getElementById("level").textContent =
+      "LEVEL " + level;
+
+    createLevel();
+  }
+}
+
+function draw() {
+
+  ctx.fillStyle = "#87ceeb";
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = "white";
+
+  ctx.beginPath();
+
+  ctx.arc(100, 80, 30, 0, Math.PI * 2);
+  ctx.arc(140, 70, 40, 0, Math.PI * 2);
+  ctx.arc(180, 80, 25, 0, Math.PI * 2);
+
+  ctx.fill();
+
+  for (const p of platforms) {
+
+    ctx.fillStyle = "#22c55e";
+
+    ctx.fillRect(
+      p.x - cameraX,
+      p.y,
+      p.w,
+      p.h
+    );
+  }
+
+  ctx.fillStyle = "#ef4444";
+
+  ctx.fillRect(
+    player.x - cameraX,
+    player.y,
+    player.w,
+    player.h
+  );
+
+  ctx.fillStyle = "white";
+
+  ctx.fillRect(
+    player.x - cameraX + 7,
+    player.y + 8,
     6,
     6
-  \);
-  ctx\.fillRect\(
-    player\.x \- cameraX \+ 23,
-    player\.y \+ 8,
+  );
+
+  ctx.fillRect(
+    player.x - cameraX + 23,
+    player.y + 8,
     6,
     6
-  \);
-\}
-function gameLoop\(\)\{
-  update\(\);
-  draw\(\);
-  requestAnimationFrame\(
-    gameLoop
-  \);
-\}
-gameLoop\(\);
-function holdButton\(id,set\)\{
-  const button =
-    document\.getElementById\(id\);
-  button\.addEventListener\(
-    "touchstart",
-    e=\>\{
-      e\.preventDefault\(\);
-      set\(true\);
-    \}
-  \);
-  button\.addEventListener\(
-    "touchend",
-    e=\>\{
-      e\.preventDefault\(\);
-      set\(false\);
-    \}
-  \);
-\}
-holdButton\(
-  "left",
-  value =\> left = value
-\);
-holdButton\(
-  "right",
-  value =\> right = value
-\);
-document\.getElementById\("jump"\)
-\.addEventListener\(
+  );
+}
+
+function gameLoop() {
+  update();
+  draw();
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+
+function holdButton(id, setter) {
+
+  const button = document.getElementById(id);
+
+  button.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    setter(true);
+  });
+
+  button.addEventListener("touchend", function(e) {
+    e.preventDefault();
+    setter(false);
+  });
+}
+
+holdButton("left", function(value) {
+  left = value;
+});
+
+holdButton("right", function(value) {
+  right = value;
+});
+
+document.getElementById("jump").addEventListener(
   "touchstart",
-  e=\>\{
-    e\.preventDefault\(\);
+  function(e) {
+    e.preventDefault();
     jump = true;
-  \}
-\);
-window\.addEventListener\(
-  "keydown",
-  e=\>\{
-    if\(
-      e\.key === "ArrowLeft" \|\|
-      e\.key === "a"
-    \)\{
-      left = true;
-    \}
-    if\(
-      e\.key === "ArrowRight" \|\|
-      e\.key === "d"
-    \)\{
-      right = true;
-    \}
-    if\(
-      e\.key === "ArrowUp" \|\|
-      e\.key === " " \|\|
-      e\.key === "w"
-    \)\{
-      jump = true;
-    \}
-  \}
-\);
-window\.addEventListener\(
-  "keyup",
-  e=\>\{
-    if\(
-      e\.key === "ArrowLeft" \|\|
-      e\.key === "a"
-    \)\{
-      left = false;
-    \}
-    if\(
-      e\.key === "ArrowRight" \|\|
-      e\.key === "d"
-    \)\{
-      right = false;
-    \}
-  \}
-\);
-</script\>
-</body\>
-</html\>
+  }
+);
+
+window.addEventListener("keydown", function(e) {
+
+  if (e.key === "ArrowLeft" || e.key === "a") {
+    left = true;
+  }
+
+  if (e.key === "ArrowRight" || e.key === "d") {
+    right = true;
+  }
+
+  if (
+    e.key === "ArrowUp" ||
+    e.key === " " ||
+    e.key === "w"
+  ) {
+    jump = true;
+  }
+});
+
+window.addEventListener("keyup", function(e) {
+
+  if (e.key === "ArrowLeft" || e.key === "a") {
+    left = false;
+  }
+
+  if (e.key === "ArrowRight" || e.key === "d") {
+    right = false;
+  }
+});
+</script>
+
+</body>
+</html>
