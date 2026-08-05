@@ -1,510 +1,696 @@
-<\!DOCTYPE html\>
-<html lang="ko"\>
-<head\>
-<meta charset="UTF\-8"\>
-<meta name="viewport" content="width=device\-width,initial\-scale=1\.0,user\-scalable=no"\>
-<title\>🔥 극한 점프맵</title\>
-<style\>
-\*\{
-  box\-sizing:border\-box;
-  \-webkit\-user\-select:none;
-  user\-select:none;
-  touch\-action:none;
-\}
-html,body\{
-  margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:\#111;
-  font\-family:Arial,sans\-serif;
-\}
-canvas\{
-  display:block;
-  width:100%;
-  height:100%;
-  background:\#20242b;
-\}
-\#ui\{
-  position:fixed;
-  top:10px;
-  left:10px;
-  color:white;
-  font\-size:16px;
-  font\-weight:bold;
-  z\-index:5;
-  text\-shadow:2px 2px 3px \#000;
-\}
-\#message\{
-  position:fixed;
-  top:45%;
-  left:50%;
-  transform:translate\(\-50%,\-50%\);
-  color:white;
-  font\-size:30px;
-  font\-weight:bold;
-  text\-align:center;
-  z\-index:10;
-  display:none;
-  text\-shadow:3px 3px 5px \#000;
-\}
-\.controls\{
-  position:fixed;
-  bottom:18px;
-  left:0;
-  width:100%;
-  display:flex;
-  justify\-content:space\-between;
-  padding:0 18px;
-  z\-index:20;
-  pointer\-events:none;
-\}
-\.leftControls,
-\.rightControls\{
-  display:flex;
-  gap:12px;
-  pointer\-events:auto;
-\}
-\.btn\{
-  width:70px;
-  height:70px;
-  border\-radius:50%;
-  border:3px solid rgba\(255,255,255,\.7\);
-  background:rgba\(255,255,255,\.18\);
-  color:white;
-  font\-size:28px;
-  font\-weight:bold;
-  display:flex;
-  align\-items:center;
-  justify\-content:center;
-  text\-shadow:2px 2px 3px \#000;
-\}
-\.btn:active\{
-  background:rgba\(255,255,255,\.4\);
-  transform:scale\(\.94\);
-\}
-</style\>
-</head\>
-<body\>
-<canvas id="game"\></canvas\>
-<div id="ui"\>
-❤️ 목숨: <span id="lives"\>3</span\>
-　🏁 체크포인트: <span id="checkpoint"\>0</span\>
-</div\>
-<div id="message"\></div\>
-<div class="controls"\>
-  <div class="leftControls"\>
-    <div class="btn" id="left"\>◀</div\>
-    <div class="btn" id="right"\>▶</div\>
-  </div\>
-  <div class="rightControls"\>
-    <div class="btn" id="jump"\>⬆</div\>
-  </div\>
-</div\>
-<script\>
-const canvas=document\.getElementById\("game"\);
-const ctx=canvas\.getContext\("2d"\);
-let W=0;
-let H=0;
-function resize\(\)\{
-  W=canvas\.width=innerWidth;
-  H=canvas\.height=innerHeight;
-\}
-addEventListener\("resize",resize\);
-resize\(\);
-const player=\{
-  x:80,
-  y:300,
-  w:28,
-  h:38,
-  vx:0,
-  vy:0,
-  speed:0\.65,
-  maxSpeed:5,
-  jump:13,
-  grounded:false
-\};
-let spawnX=80;
-let spawnY=300;
-let lives=3;
-let checkpoint=0;
-let gameWon=false;
-const platforms=&#91;
-  \{x:0,y:500,w:300,h:35\},
-  \{x:360,y:440,w:130,h:25\},
-  \{x:550,y:370,w:120,h:25\},
-  \{x:730,y:310,w:120,h:25\},
-  \{x:910,y:380,w:140,h:25\},
-  \{x:1120,y:300,w:160,h:25,checkpoint:1\},
-  \{x:1340,y:390,w:110,h:25\},
-  \{x:1510,y:320,w:100,h:25\},
-  \{x:1670,y:250,w:110,h:25\},
-  \{x:1870,y:350,w:160,h:25,checkpoint:2\},
-  \{x:2090,y:300,w:100,h:22\},
-  \{x:2270,y:410,w:90,h:22\},
-  \{x:2430,y:300,w:100,h:22\},
-  \{x:2610,y:210,w:90,h:22\},
-  \{x:2780,y:350,w:100,h:22\},
-  \{x:2960,y:250,w:120,h:22\},
-  \{x:3180,y:350,w:120,h:25\},
-  \{x:3370,y:270,w:100,h:25\},
-  \{x:3530,y:190,w:100,h:25\},
-  \{x:3700,y:300,w:160,h:30,goal:true\}
-&#93;;
-const lava=&#91;
-  \{x:1870,y:500,w:1300,h:500\},
-  \{x:3200,y:500,w:600,h:500\}
-&#93;;
-const movingPlatforms=&#91;
-  \{
-    x:1180,
-    y:220,
-    w:100,
-    h:22,
-    startY:220,
-    range:80,
-    speed:0\.025,
-    t:0
-  \},
-  \{
-    x:2180,
-    y:230,
-    w:80,
-    h:22,
-    startY:230,
-    range:70,
-    speed:0\.035,
-    t:2
-  \},
-  \{
-    x:2860,
-    y:170,
-    w:90,
-    h:22,
-    startY:170,
-    range:80,
-    speed:0\.03,
-    t:4
-  \}
-&#93;;
-const keys=\{
-  left:false,
-  right:false,
-  jump:false
-\};
-function button\(id,key\)\{
-  const el=document\.getElementById\(id\);
-  el\.addEventListener\("touchstart",e=\>\{
-    e\.preventDefault\(\);
-    keys&#91;key&#93;=true;
-  \},\{passive:false\}\);
-  el\.addEventListener\("touchend",e=\>\{
-    e\.preventDefault\(\);
-    keys&#91;key&#93;=false;
-  \},\{passive:false\}\);
-  el\.addEventListener\("touchcancel",\(\)=\>\{
-    keys&#91;key&#93;=false;
-  \}\);
-  el\.addEventListener\("mousedown",\(\)=\>\{
-    keys&#91;key&#93;=true;
-  \}\);
-  el\.addEventListener\("mouseup",\(\)=\>\{
-    keys&#91;key&#93;=false;
-  \}\);
-  el\.addEventListener\("mouseleave",\(\)=\>\{
-    keys&#91;key&#93;=false;
-  \}\);
-\}
-button\("left","left"\);
-button\("right","right"\);
-button\("jump","jump"\);
-addEventListener\("keydown",e=\>\{
-  if\(e\.key==="ArrowLeft"\|\|e\.key==="a"\)
-    keys\.left=true;
-  if\(e\.key==="ArrowRight"\|\|e\.key==="d"\)
-    keys\.right=true;
-  if\(e\.key==="ArrowUp"\|\|e\.key===" "\|\|e\.key==="w"\)
-    keys\.jump=true;
-\}\);
-addEventListener\("keyup",e=\>\{
-  if\(e\.key==="ArrowLeft"\|\|e\.key==="a"\)
-    keys\.left=false;
-  if\(e\.key==="ArrowRight"\|\|e\.key==="d"\)
-    keys\.right=false;
-  if\(e\.key==="ArrowUp"\|\|e\.key===" "\|\|e\.key==="w"\)
-    keys\.jump=false;
-\}\);
-let jumpLock=false;
-function tryJump\(\)\{
-  if\(
-    keys\.jump &&
-    player\.grounded &&
-    \!jumpLock
-  \)\{
-    player\.vy=\-player\.jump;
-    player\.grounded=false;
-    jumpLock=true;
-  \}
-  if\(\!keys\.jump\)
-    jumpLock=false;
-\}
-function collide\(a,b\)\{
-  return\(
-    a\.x<b\.x\+b\.w &&
-    a\.x\+a\.w\>b\.x &&
-    a\.y<b\.y\+b\.h &&
-    a\.y\+a\.h\>b\.y
-  \);
-\}
-function die\(\)\{
-  lives\-\-;
-  document\.getElementById\("lives"\)\.textContent=lives;
-  if\(lives<=0\)\{
-    lives=3;
-    checkpoint=0;
-    spawnX=80;
-    spawnY=300;
-    document\.getElementById\("checkpoint"\)\.textContent=0;
-    document\.getElementById\("lives"\)\.textContent=3;
-  \}
-  player\.x=spawnX;
-  player\.y=spawnY;
-  player\.vx=0;
-  player\.vy=0;
-\}
-let cameraX=0;
-function update\(\)\{
-  if\(gameWon\)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>극한 점프맵</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  user-select: none;
+  touch-action: none;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+  font-family: Arial, sans-serif;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #20242b;
+}
+
+#ui {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  z-index: 5;
+  text-shadow: 2px 2px 3px black;
+}
+
+#message {
+  position: fixed;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 30px;
+  font-weight: bold;
+  text-align: center;
+  z-index: 10;
+  display: none;
+  text-shadow: 3px 3px 5px black;
+}
+
+.controls {
+  position: fixed;
+  bottom: 18px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 18px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.leftControls,
+.rightControls {
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.18);
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 2px 2px 3px black;
+}
+
+.btn:active {
+  background: rgba(255,255,255,0.4);
+  transform: scale(0.94);
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="ui">
+❤️ 목숨: <span id="lives">3</span>
+　🏁 체크포인트: <span id="checkpoint">0</span>
+</div>
+
+<div id="message"></div>
+
+<div class="controls">
+
+  <div class="leftControls">
+    <div class="btn" id="left">◀</div>
+    <div class="btn" id="right">▶</div>
+  </div>
+
+  <div class="rightControls">
+    <div class="btn" id="jump">⬆</div>
+  </div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W = 0;
+let H = 0;
+
+function resize() {
+  W = canvas.width = innerWidth;
+  H = canvas.height = innerHeight;
+}
+
+addEventListener("resize", resize);
+resize();
+
+const player = {
+  x: 80,
+  y: 300,
+  w: 28,
+  h: 38,
+  vx: 0,
+  vy: 0,
+  speed: 0.65,
+  maxSpeed: 5,
+  jump: 13,
+  grounded: false
+};
+
+let spawnX = 80;
+let spawnY = 300;
+
+let lives = 3;
+let checkpoint = 0;
+let gameWon = false;
+
+const platforms = [
+
+  { x: 0, y: 500, w: 300, h: 35 },
+
+  { x: 360, y: 440, w: 130, h: 25 },
+
+  { x: 550, y: 370, w: 120, h: 25 },
+
+  { x: 730, y: 310, w: 120, h: 25 },
+
+  { x: 910, y: 380, w: 140, h: 25 },
+
+  { x: 1120, y: 300, w: 160, h: 25, checkpoint: 1 },
+
+  { x: 1340, y: 390, w: 110, h: 25 },
+
+  { x: 1510, y: 320, w: 100, h: 25 },
+
+  { x: 1670, y: 250, w: 110, h: 25 },
+
+  { x: 1870, y: 350, w: 160, h: 25, checkpoint: 2 },
+
+  { x: 2090, y: 300, w: 100, h: 22 },
+
+  { x: 2270, y: 410, w: 90, h: 22 },
+
+  { x: 2430, y: 300, w: 100, h: 22 },
+
+  { x: 2610, y: 210, w: 90, h: 22 },
+
+  { x: 2780, y: 350, w: 100, h: 22 },
+
+  { x: 2960, y: 250, w: 120, h: 22 },
+
+  { x: 3180, y: 350, w: 120, h: 25 },
+
+  { x: 3370, y: 270, w: 100, h: 25 },
+
+  { x: 3530, y: 190, w: 100, h: 25 },
+
+  { x: 3700, y: 300, w: 160, h: 30, goal: true }
+];
+
+const lava = [
+  { x: 1870, y: 500, w: 1300, h: 500 },
+  { x: 3200, y: 500, w: 600, h: 500 }
+];
+
+const movingPlatforms = [
+
+  {
+    x: 1180,
+    y: 220,
+    w: 100,
+    h: 22,
+    startY: 220,
+    range: 80,
+    speed: 0.025,
+    t: 0
+  },
+
+  {
+    x: 2180,
+    y: 230,
+    w: 80,
+    h: 22,
+    startY: 230,
+    range: 70,
+    speed: 0.035,
+    t: 2
+  },
+
+  {
+    x: 2860,
+    y: 170,
+    w: 90,
+    h: 22,
+    startY: 170,
+    range: 80,
+    speed: 0.03,
+    t: 4
+  }
+];
+
+const keys = {
+  left: false,
+  right: false,
+  jump: false
+};
+
+function button(id, key) {
+
+  const el = document.getElementById(id);
+
+  el.addEventListener("touchstart", function(e) {
+    e.preventDefault();
+    keys[key] = true;
+  }, { passive: false });
+
+  el.addEventListener("touchend", function(e) {
+    e.preventDefault();
+    keys[key] = false;
+  }, { passive: false });
+
+  el.addEventListener("touchcancel", function() {
+    keys[key] = false;
+  });
+
+  el.addEventListener("mousedown", function() {
+    keys[key] = true;
+  });
+
+  el.addEventListener("mouseup", function() {
+    keys[key] = false;
+  });
+
+  el.addEventListener("mouseleave", function() {
+    keys[key] = false;
+  });
+}
+
+button("left", "left");
+button("right", "right");
+button("jump", "jump");
+
+addEventListener("keydown", function(e) {
+
+  if (e.key === "ArrowLeft" || e.key === "a") {
+    keys.left = true;
+  }
+
+  if (e.key === "ArrowRight" || e.key === "d") {
+    keys.right = true;
+  }
+
+  if (e.key === "ArrowUp" || e.key === " " || e.key === "w") {
+    keys.jump = true;
+  }
+});
+
+addEventListener("keyup", function(e) {
+
+  if (e.key === "ArrowLeft" || e.key === "a") {
+    keys.left = false;
+  }
+
+  if (e.key === "ArrowRight" || e.key === "d") {
+    keys.right = false;
+  }
+
+  if (e.key === "ArrowUp" || e.key === " " || e.key === "w") {
+    keys.jump = false;
+  }
+});
+
+let jumpLock = false;
+
+function tryJump() {
+
+  if (keys.jump && player.grounded && !jumpLock) {
+    player.vy = -player.jump;
+    player.grounded = false;
+    jumpLock = true;
+  }
+
+  if (!keys.jump) {
+    jumpLock = false;
+  }
+}
+
+function collide(a, b) {
+
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+function die() {
+
+  lives--;
+
+  document.getElementById("lives").textContent = lives;
+
+  if (lives <= 0) {
+
+    lives = 3;
+    checkpoint = 0;
+
+    spawnX = 80;
+    spawnY = 300;
+
+    document.getElementById("checkpoint").textContent = 0;
+    document.getElementById("lives").textContent = 3;
+  }
+
+  player.x = spawnX;
+  player.y = spawnY;
+  player.vx = 0;
+  player.vy = 0;
+}
+
+let cameraX = 0;
+
+function update() {
+
+  if (gameWon) {
     return;
-  for\(const p of movingPlatforms\)\{
-    p\.t\+=p\.speed;
-    p\.y=p\.startY\+Math\.sin\(p\.t\)\*p\.range;
-  \}
-  if\(keys\.left\)
-    player\.vx\-=player\.speed;
-  if\(keys\.right\)
-    player\.vx\+=player\.speed;
-  player\.vx\*=0\.82;
-  if\(player\.vx\>player\.maxSpeed\)
-    player\.vx=player\.maxSpeed;
-  if\(player\.vx<\-player\.maxSpeed\)
-    player\.vx=\-player\.maxSpeed;
-  tryJump\(\);
-  player\.vy\+=0\.65;
-  if\(player\.vy\>15\)
-    player\.vy=15;
-  player\.x\+=player\.vx;
-  if\(player\.x<0\)
-    player\.x=0;
-  const oldY=player\.y;
-  player\.y\+=player\.vy;
-  player\.grounded=false;
-  for\(const p of platforms\)\{
-    if\(
-      player\.x\+player\.w\>p\.x &&
-      player\.x<p\.x\+p\.w &&
-      oldY\+player\.h<=p\.y &&
-      player\.y\+player\.h\>=p\.y &&
-      player\.vy\>=0
-    \)\{
-      player\.y=p\.y\-player\.h;
-      player\.vy=0;
-      player\.grounded=true;
-      if\(p\.checkpoint && checkpoint<p\.checkpoint\)\{
-        checkpoint=p\.checkpoint;
-        spawnX=p\.x\+20;
-        spawnY=p\.y\-player\.h;
-        document\.getElementById\("checkpoint"\)\.textContent=
-          checkpoint;
-      \}
-      if\(p\.goal\)
-        win\(\);
-    \}
-  \}
-  for\(const p of movingPlatforms\)\{
-    if\(
-      player\.x\+player\.w\>p\.x &&
-      player\.x<p\.x\+p\.w &&
-      oldY\+player\.h<=p\.y &&
-      player\.y\+player\.h\>=p\.y &&
-      player\.vy\>=0
-    \)\{
-      player\.y=p\.y\-player\.h;
-      player\.vy=0;
-      player\.grounded=true;
-    \}
-  \}
-  for\(const l of lava\)\{
-    if\(collide\(player,l\)\)\{
-      die\(\);
+  }
+
+  for (const p of movingPlatforms) {
+
+    p.t += p.speed;
+
+    p.y = p.startY + Math.sin(p.t) * p.range;
+  }
+
+  if (keys.left) {
+    player.vx -= player.speed;
+  }
+
+  if (keys.right) {
+    player.vx += player.speed;
+  }
+
+  player.vx *= 0.82;
+
+  if (player.vx > player.maxSpeed) {
+    player.vx = player.maxSpeed;
+  }
+
+  if (player.vx < -player.maxSpeed) {
+    player.vx = -player.maxSpeed;
+  }
+
+  tryJump();
+
+  player.vy += 0.65;
+
+  if (player.vy > 15) {
+    player.vy = 15;
+  }
+
+  player.x += player.vx;
+
+  if (player.x < 0) {
+    player.x = 0;
+  }
+
+  const oldY = player.y;
+
+  player.y += player.vy;
+
+  player.grounded = false;
+
+  for (const p of platforms) {
+
+    if (
+      player.x + player.w > p.x &&
+      player.x < p.x + p.w &&
+      oldY + player.h <= p.y &&
+      player.y + player.h >= p.y &&
+      player.vy >= 0
+    ) {
+
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+
+      if (p.checkpoint && checkpoint < p.checkpoint) {
+
+        checkpoint = p.checkpoint;
+
+        spawnX = p.x + 20;
+        spawnY = p.y - player.h;
+
+        document.getElementById("checkpoint").textContent = checkpoint;
+      }
+
+      if (p.goal) {
+        win();
+      }
+    }
+  }
+
+  for (const p of movingPlatforms) {
+
+    if (
+      player.x + player.w > p.x &&
+      player.x < p.x + p.w &&
+      oldY + player.h <= p.y &&
+      player.y + player.h >= p.y &&
+      player.vy >= 0
+    ) {
+
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.grounded = true;
+    }
+  }
+
+  for (const l of lava) {
+
+    if (collide(player, l)) {
+      die();
       break;
-    \}
-  \}
-  if\(player\.y\>750\)
-    die\(\);
-  const targetCamera=player\.x\-W\*0\.35;
-  cameraX\+=\(targetCamera\-cameraX\)\*0\.08;
-  if\(cameraX<0\)
-    cameraX=0;
-\}
-function win\(\)\{
-  gameWon=true;
-  const msg=document\.getElementById\("message"\);
-  msg\.style\.display="block";
-  msg\.innerHTML=
-    "🏆 CLEAR\! 🏆<br\>" \+
-    "<span style='font\-size:18px'\>극한 점프맵 정복\!</span\>";
-\}
-function draw\(\)\{
-  ctx\.clearRect\(0,0,W,H\);
-  ctx\.save\(\);
-  ctx\.translate\(\-cameraX,0\);
-  const start=Math\.floor\(cameraX/100\)\*100;
-  for\(
-    let x=start;
-    x<cameraX\+W\+200;
-    x\+=100
-  \)\{
-    ctx\.fillStyle=
-      Math\.floor\(x/100\)%2===0
-      ? "\#20242b"
-      : "\#252a32";
-    ctx\.fillRect\(x,0,100,H\);
-  \}
-  ctx\.fillStyle="\#555";
-  for\(
-    let x=start;
-    x<cameraX\+W\+200;
-    x\+=180
-  \)\{
-    ctx\.fillRect\(
+    }
+  }
+
+  if (player.y > 750) {
+    die();
+  }
+
+  const targetCamera = player.x - W * 0.35;
+
+  cameraX += (targetCamera - cameraX) * 0.08;
+
+  if (cameraX < 0) {
+    cameraX = 0;
+  }
+}
+
+function win() {
+
+  gameWon = true;
+
+  const msg = document.getElementById("message");
+
+  msg.style.display = "block";
+
+  msg.innerHTML =
+    "🏆 CLEAR! 🏆<br>" +
+    "<span style='font-size:18px'>극한 점프맵 정복!</span>";
+}
+
+function draw() {
+
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.save();
+
+  ctx.translate(-cameraX, 0);
+
+  const start = Math.floor(cameraX / 100) * 100;
+
+  for (
+    let x = start;
+    x < cameraX + W + 200;
+    x += 100
+  ) {
+
+    ctx.fillStyle =
+      Math.floor(x / 100) % 2 === 0
+      ? "#20242b"
+      : "#252a32";
+
+    ctx.fillRect(x, 0, 100, H);
+  }
+
+  ctx.fillStyle = "#555";
+
+  for (
+    let x = start;
+    x < cameraX + W + 200;
+    x += 180
+  ) {
+
+    ctx.fillRect(
       x,
-      100\+\(x%170\),
+      100 + (x % 170),
       3,
       3
-    \);
-  \}
-  for\(const l of lava\)\{
-    ctx\.fillStyle="\#ff3b00";
-    ctx\.fillRect\(
-      l\.x,
-      l\.y,
-      l\.w,
-      l\.h
-    \);
-    ctx\.fillStyle="\#ff8c00";
-    for\(
-      let x=l\.x;
-      x<l\.x\+l\.w;
-      x\+=70
-    \)\{
-      const wave=
-        Math\.sin\(
-          \(x\+performance\.now\(\)\*0\.08\)\*0\.04
-        \)\*8;
-      ctx\.beginPath\(\);
-      ctx\.moveTo\(x,l\.y\+10\);
-      ctx\.lineTo\(x\+35,l\.y\+wave\);
-      ctx\.lineTo\(x\+70,l\.y\+10\);
-      ctx\.fill\(\);
-    \}
-  \}
-  for\(const p of platforms\)\{
-    ctx\.fillStyle=
-      p\.goal
-      ? "\#ffd700"
-      : p\.checkpoint
-      ? "\#00e5ff"
-      : "\#6b7280";
-    ctx\.fillRect\(
-      p\.x,
-      p\.y,
-      p\.w,
-      p\.h
-    \);
-    ctx\.fillStyle="rgba\(255,255,255,\.25\)";
-    ctx\.fillRect\(
-      p\.x,
-      p\.y,
-      p\.w,
+    );
+  }
+
+  for (const l of lava) {
+
+    ctx.fillStyle = "#ff3b00";
+
+    ctx.fillRect(
+      l.x,
+      l.y,
+      l.w,
+      l.h
+    );
+
+    ctx.fillStyle = "#ff8c00";
+
+    for (
+      let x = l.x;
+      x < l.x + l.w;
+      x += 70
+    ) {
+
+      const wave =
+        Math.sin(
+          (x + performance.now() * 0.08) * 0.04
+        ) * 8;
+
+      ctx.beginPath();
+
+      ctx.moveTo(x, l.y + 10);
+      ctx.lineTo(x + 35, l.y + wave);
+      ctx.lineTo(x + 70, l.y + 10);
+
+      ctx.fill();
+    }
+  }
+
+  for (const p of platforms) {
+
+    ctx.fillStyle =
+      p.goal
+      ? "#ffd700"
+      : p.checkpoint
+      ? "#00e5ff"
+      : "#6b7280";
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      p.w,
+      p.h
+    );
+
+    ctx.fillStyle = "rgba(255,255,255,0.25)";
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      p.w,
       5
-    \);
-    if\(p\.checkpoint\)\{
-      ctx\.fillStyle="\#fff";
-      ctx\.font="14px Arial";
-      ctx\.fillText\(
+    );
+
+    if (p.checkpoint) {
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "14px Arial";
+
+      ctx.fillText(
         "CHECK",
-        p\.x\+15,
-        p\.y\-8
-      \);
-    \}
-    if\(p\.goal\)\{
-      ctx\.fillStyle="\#fff";
-      ctx\.font="18px Arial";
-      ctx\.fillText\(
+        p.x + 15,
+        p.y - 8
+      );
+    }
+
+    if (p.goal) {
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "18px Arial";
+
+      ctx.fillText(
         "🏆 GOAL",
-        p\.x\+30,
-        p\.y\-12
-      \);
-    \}
-  \}
-  for\(const p of movingPlatforms\)\{
-    ctx\.fillStyle="\#b56cff";
-    ctx\.fillRect\(
-      p\.x,
-      p\.y,
-      p\.w,
-      p\.h
-    \);
-    ctx\.fillStyle="\#e5c8ff";
-    ctx\.fillRect\(
-      p\.x,
-      p\.y,
-      p\.w,
+        p.x + 30,
+        p.y - 12
+      );
+    }
+  }
+
+  for (const p of movingPlatforms) {
+
+    ctx.fillStyle = "#b56cff";
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      p.w,
+      p.h
+    );
+
+    ctx.fillStyle = "#e5c8ff";
+
+    ctx.fillRect(
+      p.x,
+      p.y,
+      p.w,
       4
-    \);
-  \}
-  ctx\.fillStyle="\#36a9ff";
-  ctx\.fillRect\(
-    player\.x,
-    player\.y,
-    player\.w,
-    player\.h
-  \);
-  ctx\.fillStyle="\#fff";
-  ctx\.fillRect\(
-    player\.x\+6,
-    player\.y\+8,
+    );
+  }
+
+  ctx.fillStyle = "#36a9ff";
+
+  ctx.fillRect(
+    player.x,
+    player.y,
+    player.w,
+    player.h
+  );
+
+  ctx.fillStyle = "#fff";
+
+  ctx.fillRect(
+    player.x + 6,
+    player.y + 8,
     5,
     5
-  \);
-  ctx\.fillRect\(
-    player\.x\+18,
-    player\.y\+8,
+  );
+
+  ctx.fillRect(
+    player.x + 18,
+    player.y + 8,
     5,
     5
-  \);
-  ctx\.fillStyle="\#111";
-  ctx\.fillRect\(
-    player\.x\+7,
-    player\.y\+9,
+  );
+
+  ctx.fillStyle = "#111";
+
+  ctx.fillRect(
+    player.x + 7,
+    player.y + 9,
     3,
     3
-  \);
-  ctx\.fillRect\(
-    player\.x\+19,
-    player\.y\+9,
+  );
+
+  ctx.fillRect(
+    player.x + 19,
+    player.y + 9,
     3,
     3
-  \);
-  ctx\.restore\(\);
-\}
-function loop\(\)\{
-  update\(\);
-  draw\(\);
-  requestAnimationFrame\(loop\);
-\}
-loop\(\);
-</script\>
-</body\>
-</html\>
+  );
+
+  ctx.restore();
+}
+
+function loop() {
+
+  update();
+  draw();
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+
+</body>
+</html>
