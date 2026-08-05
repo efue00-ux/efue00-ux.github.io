@@ -61,10 +61,33 @@ function reset(){
 }
 document.getElementById('start').addEventListener('pointerup',reset);
 canvas.addEventListener('pointerdown',e=>{pointer.active=true;moveTo(e.clientX,e.clientY)});
-canvas.addEventListener('pointermove',e=>{if(pointer.active)moveTo(e.clientX,e.clientY)});
-addEventListener('pointerup',()=>pointer.active=false);
+function moveTo(x,y){
 
-function fire(){
+  player.x=Math.max(25,Math.min(W-25,x));
+
+  player.y=Math.max(70,Math.min(H-35,y));
+
+}
+
+canvas.addEventListener('pointerdown',e=>{
+
+  pointer.active=true;
+
+  moveTo(e.clientX,e.clientY);
+
+});
+
+canvas.addEventListener('pointermove',e=>{
+
+  if(pointer.active) moveTo(e.clientX,e.clientY);
+
+});
+
+addEventListener('pointerup',()=>{
+
+  pointer.active=false;
+
+});
  if(!running)return;
  bullets.push({x:player.x,y:player.y-24,vy:-650,r:5});
 }
