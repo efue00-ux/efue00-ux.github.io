@@ -1,1242 +1,782 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>SHADOW NINJA</title>
-
-<style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-  user-select:none;
-  -webkit-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-}
-
-html,body{
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#050713;
-  font-family:Arial,sans-serif;
-  touch-action:none;
-}
-
-canvas{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-}
-
-#menu{
-  position:fixed;
-  inset:0;
-  z-index:20;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  background:
-    radial-gradient(circle at center,#182052 0%,#090c1b 45%,#02030a 100%);
-}
-
-.box{
-  width:88%;
-  max-width:500px;
-  padding:30px 20px;
-  border:2px solid #00eaff;
-  border-radius:25px;
-  background:rgba(4,8,20,.88);
-  box-shadow:0 0 40px rgba(0,234,255,.25);
-}
-
-h1{
-  font-size:48px;
-  letter-spacing:4px;
-  color:white;
-  text-shadow:
-    0 0 10px #00eaff,
-    0 0 30px #00eaff;
-  margin-bottom:5px;
-}
-
-.subtitle{
-  color:#ff3c82;
-  font-size:18px;
-  font-weight:bold;
-  letter-spacing:5px;
-  margin-bottom:25px;
-}
-
-#startButton{
-  width:100%;
-  padding:18px;
-  border:0;
-  border-radius:15px;
-  background:linear-gradient(90deg,#00cfff,#705cff);
-  color:white;
-  font-size:21px;
-  font-weight:bold;
-  cursor:pointer;
-  touch-action:manipulation;
-}
-
-.info{
-  margin-top:18px;
-  color:#9ba9c7;
-  font-size:14px;
-  line-height:1.7;
-}
-
-#hud{
-  position:fixed;
-  z-index:5;
-  top:12px;
-  left:12px;
-  right:12px;
-  display:none;
-  justify-content:space-between;
-  pointer-events:none;
-}
-
-.hudBox{
-  padding:9px 12px;
-  border-radius:12px;
-  border:1px solid #00dfff;
-  background:rgba(5,10,25,.7);
-  color:white;
-}
-
-#healthOuter{
-  width:150px;
-  height:10px;
-  margin-top:5px;
-  background:#242638;
-  border-radius:10px;
-  overflow:hidden;
-}
-
-#health{
-  width:100%;
-  height:100%;
-  background:#ff326d;
-}
-
-#controls{
-  position:fixed;
-  z-index:10;
-  left:0;
-  right:0;
-  bottom:15px;
-  height:150px;
-  display:none;
-  pointer-events:none;
-}
-
-.control{
-  position:absolute;
-  width:70px;
-  height:70px;
-  border-radius:50%;
-  border:2px solid rgba(255,255,255,.25);
-  background:rgba(10,15,35,.78);
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:26px;
-  font-weight:bold;
-  pointer-events:auto;
-  touch-action:manipulation;
-}
-
-.control:active{
-  transform:scale(.9);
-  background:#123d58;
-}
-
-#left{
-  left:15px;
-  bottom:20px;
-}
-
-#right{
-  left:95px;
-  bottom:20px;
-}
-
-#jump{
-  right:100px;
-  bottom:20px;
-  color:#00eaff;
-}
-
-#attack{
-  right:18px;
-  bottom:20px;
-  color:#ff4c91;
-}
-
-#dash{
-  right:55px;
-  bottom:100px;
-  width:55px;
-  height:55px;
-  font-size:14px;
-  color:#b78cff;
-}
-
-#gameOver{
-  position:fixed;
-  inset:0;
-  z-index:30;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  background:rgba(0,0,0,.82);
-}
-
-#restart{
-  margin-top:20px;
-  width:100%;
-  padding:16px;
-  border:0;
-  border-radius:14px;
-  background:linear-gradient(90deg,#ff3477,#733cff);
-  color:white;
-  font-size:20px;
-  font-weight:bold;
-}
-</style>
-</head>
-
-<body>
-
-<canvas id="game"></canvas>
-
-<div id="menu">
-  <div class="box">
-    <h1>SHADOW</h1>
-    <div class="subtitle">NINJA</div>
-
-    <button id="startButton" type="button">
-      START MISSION
-    </button>
-
-    <div class="info">
-      ◀ ▶ 이동<br>
-      ↑ 점프<br>
-      ⚔ 공격<br>
-      DASH 회피<br><br>
-      적을 쓰러뜨리고 보스를 처치하라.
-    </div>
-  </div>
-</div>
-
-<div id="hud">
-
-  <div class="hudBox">
-    <b>HP</b>
-    <div id="healthOuter">
-      <div id="health"></div>
-    </div>
-  </div>
-
-  <div class="hudBox">
-    SCORE <b id="score">0</b><br>
-    WAVE <b id="wave">1</b>
-  </div>
-
-</div>
-
-<div id="controls">
-
-  <div class="control" id="left">◀</div>
-  <div class="control" id="right">▶</div>
-  <div class="control" id="jump">↑</div>
-  <div class="control" id="attack">⚔</div>
-  <div class="control" id="dash">DASH</div>
-
-</div>
-
-<div id="gameOver">
-
-  <div class="box">
-    <h1>DEFEATED</h1>
-
-    <div class="subtitle">
-      SCORE <span id="finalScore">0</span>
-    </div>
-
-    <button id="restart">
-      RETRY
-    </button>
-  </div>
-
-</div>
-
-<script>
-
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
-
-let W=innerWidth;
-let H=innerHeight;
-
-function resize(){
-  W=innerWidth;
-  H=innerHeight;
-
-  canvas.width=W*devicePixelRatio;
-  canvas.height=H*devicePixelRatio;
-
-  canvas.style.width=W+"px";
-  canvas.style.height=H+"px";
-
-  ctx.setTransform(
-    devicePixelRatio,
-    0,
-    0,
-    devicePixelRatio,
-    0,
-    0
-  );
-}
-
-addEventListener("resize",resize);
-resize();
-
-let gameRunning=false;
-
-let keys={
-  left:false,
-  right:false,
-  jump:false,
-  attack:false,
-  dash:false
-};
-
-function button(id,key){
-
-  const el=document.getElementById(id);
-
-  el.addEventListener("pointerdown",e=>{
-    e.preventDefault();
-    keys[key]=true;
-  });
-
-  el.addEventListener("pointerup",e=>{
-    e.preventDefault();
-    keys[key]=false;
-  });
-
-  el.addEventListener("pointercancel",()=>{
-    keys[key]=false;
-  });
-
-  el.addEventListener("pointerleave",()=>{
-    keys[key]=false;
-  });
-}
-
-button("left","left");
-button("right","right");
-button("jump","jump");
-button("attack","attack");
-button("dash","dash");
-
-addEventListener("keydown",e=>{
-
-  if(e.key==="ArrowLeft") keys.left=true;
-  if(e.key==="ArrowRight") keys.right=true;
-  if(e.key==="ArrowUp") keys.jump=true;
-
-  if(e.key==="z") keys.attack=true;
-  if(e.key==="x") keys.dash=true;
-
-});
-
-addEventListener("keyup",e=>{
-
-  if(e.key==="ArrowLeft") keys.left=false;
-  if(e.key==="ArrowRight") keys.right=false;
-  if(e.key==="ArrowUp") keys.jump=false;
-
-  if(e.key==="z") keys.attack=false;
-  if(e.key==="x") keys.dash=false;
-
-});
-
+<\!DOCTYPE html\>
+<html lang="ko"\>
+<head\>
+<meta charset="UTF\-8"\>
+<meta name="viewport" content="width=device\-width,initial\-scale=1,maximum\-scale=1,user\-scalable=no"\>
+<title\>SHADOW NINJA</title\>
+<style\>
+\*\{box\-sizing:border\-box;margin:0;padding:0;user\-select:none;\-webkit\-user\-select:none;\-webkit\-tap\-highlight\-color:transparent\}
+html,body\{width:100%;height:100%;overflow:hidden;background:\#03050d;touch\-action:none;font\-family:Arial,sans\-serif\}
+canvas\{position:fixed;inset:0;width:100%;height:100%\}
+\#menu,\#gameover\{
+ position:fixed;inset:0;z\-index:100;
+ display:flex;align\-items:center;justify\-content:center;text\-align:center;
+ background:radial\-gradient\(circle at 50% 40%,\#192657,\#080b19 45%,\#020309\)
+\}
+\#gameover\{display:none\}
+\.card\{
+ width:88%;max\-width:520px;padding:30px 22px;
+ border:2px solid \#00eaff;border\-radius:25px;
+ background:rgba\(3,7,20,\.94\);
+ box\-shadow:0 0 35px rgba\(0,234,255,\.25\)
+\}
+h1\{color:white;font\-size:52px;letter\-spacing:5px;line\-height:\.95;text\-shadow:0 0 10px \#00eaff,0 0 30px \#00eaff\}
+\.sub\{margin:12px 0 25px;color:\#ff3d82;letter\-spacing:6px;font\-weight:bold\}
+\.startButton,\.retryButton\{
+ width:100%;padding:18px;border:0;border\-radius:15px;
+ background:linear\-gradient\(90deg,\#00cfff,\#725cff\);
+ color:white;font\-size:20px;font\-weight:900;touch\-action:manipulation
+\}
+\.help\{color:\#91a0bd;margin\-top:18px;line\-height:1\.7;font\-size:14px\}
+\#hud\{
+ position:fixed;z\-index:20;top:12px;left:12px;right:12px;
+ display:none;justify\-content:space\-between;pointer\-events:none
+\}
+\.hud\{
+ background:rgba\(5,9,23,\.75\);border:1px solid rgba\(0,234,255,\.45\);
+ border\-radius:12px;padding:9px 12px;color:white
+\}
+\#hpBack\{width:145px;height:10px;margin\-top:5px;background:\#26283a;border\-radius:10px;overflow:hidden\}
+\#hp\{width:100%;height:100%;background:\#ff356e;box\-shadow:0 0 10px \#ff356e\}
+\#combo\{
+ position:fixed;z\-index:21;top:115px;left:0;width:100%;
+ text\-align:center;color:\#fff;font\-size:28px;font\-weight:900;
+ opacity:0;pointer\-events:none;text\-shadow:0 0 15px \#ff3d82
+\}
+\#bossUI\{
+ position:fixed;z\-index:20;top:72px;left:15%;right:15%;
+ display:none;text\-align:center;color:\#ff4b91;font\-weight:bold
+\}
+\#bossBack\{height:12px;background:\#261329;border:1px solid \#ff3d82;border\-radius:10px;overflow:hidden\}
+\#bossHP\{height:100%;width:100%;background:\#ff3d82\}
+\#message\{
+ position:fixed;z\-index:25;top:22%;left:0;width:100%;
+ text\-align:center;color:white;font\-size:38px;font\-weight:900;
+ text\-shadow:0 0 20px \#00eaff;opacity:0;pointer\-events:none
+\}
+\#controls\{
+ position:fixed;z\-index:30;left:0;right:0;bottom:12px;height:160px;
+ display:none;pointer\-events:none
+\}
+\.btn\{
+ position:absolute;width:70px;height:70px;border\-radius:50%;
+ border:2px solid rgba\(255,255,255,\.22\);
+ background:rgba\(8,13,31,\.78\);color:white;
+ display:flex;align\-items:center;justify\-content:center;
+ font\-size:25px;font\-weight:bold;pointer\-events:auto;touch\-action:manipulation
+\}
+\.btn:active\{transform:scale\(\.9\);background:rgba\(0,220,255,\.25\)\}
+\#left\{left:15px;bottom:20px\}
+\#right\{left:95px;bottom:20px\}
+\#jump\{right:98px;bottom:20px;color:\#7df9ff\}
+\#attack\{right:17px;bottom:20px;color:\#ff5795\}
+\#dash\{right:57px;bottom:100px;width:56px;height:56px;font\-size:13px;color:\#b992ff\}
+</style\>
+</head\>
+<body\>
+<canvas id="game"\></canvas\>
+<div id="menu"\>
+ <div class="card"\>
+  <h1\>SHADOW<br\>NINJA</h1\>
+  <div class="sub"\>NEON RISE</div\>
+  <button class="startButton" id="start"\>START MISSION</button\>
+  <div class="help"\>
+   ◀ ▶ 이동<br\>
+   ↑ 점프 / 벽타기<br\>
+   ⚔ 3단 콤보 공격<br\>
+   DASH 공중 대시 가능<br\><br\>
+   SHOGUN ZERO를 쓰러뜨려라\.
+  </div\>
+ </div\>
+</div\>
+<div id="gameover"\>
+ <div class="card"\>
+  <h1\>MISSION<br\>FAILED</h1\>
+  <div class="sub"\>SCORE <span id="finalScore"\>0</span\></div\>
+  <button class="retryButton" id="retry"\>RETRY</button\>
+ </div\>
+</div\>
+<div id="hud"\>
+ <div class="hud"\>
+  <b\>HP</b\>
+  <div id="hpBack"\><div id="hp"\></div\></div\>
+ </div\>
+ <div class="hud"\>
+  SCORE <b id="score"\>0</b\><br\>
+  WAVE <b id="wave"\>1</b\>
+ </div\>
+</div\>
+<div id="combo"\>COMBO x1</div\>
+<div id="bossUI"\>
+ SHOGUN ZERO
+ <div id="bossBack"\><div id="bossHP"\></div\></div\>
+</div\>
+<div id="message"\></div\>
+<div id="controls"\>
+ <div class="btn" id="left"\>◀</div\>
+ <div class="btn" id="right"\>▶</div\>
+ <div class="btn" id="jump"\>↑</div\>
+ <div class="btn" id="attack"\>⚔</div\>
+ <div class="btn" id="dash"\>DASH</div\>
+</div\>
+<script\>
+const canvas=document\.getElementById\("game"\);
+const ctx=canvas\.getContext\("2d"\);
+let W=innerWidth,H=innerHeight,scale=1;
+function resize\(\)\{
+ W=innerWidth;H=innerHeight;
+ scale=Math\.min\(devicePixelRatio\|\|1,2\);
+ canvas\.width=W\*scale;
+ canvas\.height=H\*scale;
+ ctx\.setTransform\(scale,0,0,scale,0,0\);
+\}
+addEventListener\("resize",resize\);
+resize\(\);
+const input=\{
+ left:false,right:false,jump:false,attack:false,dash:false
+\};
+function bindButton\(id,key\)\{
+ const b=document\.getElementById\(id\);
+ b\.addEventListener\("pointerdown",e=\>\{
+  e\.preventDefault\(\);
+  input&#91;key&#93;=true;
+ \}\);
+ b\.addEventListener\("pointerup",e=\>\{
+  e\.preventDefault\(\);
+  input&#91;key&#93;=false;
+ \}\);
+ b\.addEventListener\("pointercancel",\(\)=\>input&#91;key&#93;=false\);
+ b\.addEventListener\("pointerleave",\(\)=\>input&#91;key&#93;=false\);
+\}
+bindButton\("left","left"\);
+bindButton\("right","right"\);
+bindButton\("jump","jump"\);
+bindButton\("attack","attack"\);
+bindButton\("dash","dash"\);
+addEventListener\("keydown",e=\>\{
+ if\(e\.code==="ArrowLeft"\)input\.left=true;
+ if\(e\.code==="ArrowRight"\)input\.right=true;
+ if\(e\.code==="ArrowUp"\|\|e\.code==="Space"\)input\.jump=true;
+ if\(e\.code==="KeyJ"\|\|e\.code==="KeyZ"\)input\.attack=true;
+ if\(e\.code==="ShiftLeft"\|\|e\.code==="KeyX"\)input\.dash=true;
+\}\);
+addEventListener\("keyup",e=\>\{
+ if\(e\.code==="ArrowLeft"\)input\.left=false;
+ if\(e\.code==="ArrowRight"\)input\.right=false;
+ if\(e\.code==="ArrowUp"\|\|e\.code==="Space"\)input\.jump=false;
+ if\(e\.code==="KeyJ"\|\|e\.code==="KeyZ"\)input\.attack=false;
+ if\(e\.code==="ShiftLeft"\|\|e\.code==="KeyX"\)input\.dash=false;
+\}\);
+let running=false;
 let player;
-let enemies;
-let particles;
-
-let score;
-let wave;
-let cameraX;
-
-let spawnTimer;
-
-let platforms;
-
-function resetGame(){
-
-  player={
-    x:150,
-    y:H-200,
-    w:38,
-    h:58,
-
-    vx:0,
-    vy:0,
-
-    speed:0.7,
-    jumpPower:-14,
-
-    hp:100,
-
-    onGround:false,
-
-    direction:1,
-
-    attackTimer:0,
-    attackCooldown:0,
-
-    dashTimer:0,
-    dashCooldown:0,
-
-    invincible:0
-  };
-
-  enemies=[];
-  particles=[];
-
-  score=0;
-  wave=1;
-
-  cameraX=0;
-
-  spawnTimer=1;
-
-  platforms=[];
-
-  platforms.push({
-    x:-1000,
-    y:H-90,
-    w:5000,
-    h:40
-  });
-}
-
-function createEnemy(){
-
-  enemies.push({
-
-    x:cameraX+W+100+Math.random()*300,
-
-    y:H-148,
-
-    w:40,
-    h:55,
-
-    hp:40,
-
-    speed:1.2+wave*.1,
-
-    attackCooldown:0,
-
-    type:Math.random()<.25?1:0
-
-  });
-
-}
-
-function particle(x,y,color){
-
-  particles.push({
-
-    x:x,
-    y:y,
-
-    vx:(Math.random()-.5)*8,
-    vy:(Math.random()-.5)*8,
-
-    life:30,
-
-    color:color
-  });
-
-}
-
-function hitEnemy(enemy){
-
-  enemy.hp-=25;
-
-  for(let i=0;i<8;i++){
-
-    particle(
-      enemy.x+20,
-      enemy.y+25,
-      "#00eaff"
-    );
-
-  }
-
-  if(enemy.hp<=0){
-
-    score+=enemy.type?150:100;
-
-    for(let i=0;i<15;i++){
-
-      particle(
-        enemy.x+20,
-        enemy.y+25,
-        "#ff3c82"
-      );
-
-    }
-
-    enemies.splice(
-      enemies.indexOf(enemy),
-      1
-    );
-  }
-
-}
-
-function damage(amount){
-
-  if(player.invincible>0)return;
-
-  player.hp-=amount;
-
-  player.invincible=45;
-
-  if(player.hp<=0){
-
-    gameRunning=false;
-
-    document.getElementById("controls").style.display="none";
-
-    document.getElementById("hud").style.display="none";
-
-    document.getElementById("finalScore").textContent=score;
-
-    document.getElementById("gameOver").style.display="flex";
-
-  }
-
-}
-
-function updatePlayer(){
-
-  let move=0;
-
-  if(keys.left)move--;
-  if(keys.right)move++;
-
-  player.vx+=move*player.speed;
-
-  player.vx*=.84;
-
-  if(player.vx>6)player.vx=6;
-  if(player.vx<-6)player.vx=-6;
-
-  if(move!==0){
-    player.direction=move;
-  }
-
-  if(
-    keys.jump &&
-    player.onGround
-  ){
-
-    player.vy=player.jumpPower;
-
-    player.onGround=false;
-
-  }
-
-  if(
-    keys.dash &&
-    player.dashCooldown<=0
-  ){
-
-    player.vx=player.direction*16;
-
-    player.dashTimer=12;
-
-    player.dashCooldown=60;
-
-    player.invincible=20;
-
-    for(let i=0;i<10;i++){
-
-      particle(
-        player.x,
-        player.y+30,
-        "#8d5cff"
-      );
-
-    }
-
-  }
-
-  if(
-    keys.attack &&
-    player.attackCooldown<=0
-  ){
-
-    player.attackTimer=12;
-
-    player.attackCooldown=18;
-
-  }
-
-  if(player.attackCooldown>0)
-    player.attackCooldown--;
-
-  if(player.dashCooldown>0)
-    player.dashCooldown--;
-
-  if(player.attackTimer>0)
-    player.attackTimer--;
-
-  if(player.dashTimer>0)
-    player.dashTimer--;
-
-  if(player.invincible>0)
-    player.invincible--;
-
-  player.vy+=.7;
-
-  player.x+=player.vx;
-  player.y+=player.vy;
-
-  player.onGround=false;
-
-  for(const p of platforms){
-
-    if(
-      player.x+player.w>p.x &&
-      player.x<p.x+p.w &&
-      player.y+player.h>=p.y &&
-      player.y+player.h<=p.y+25 &&
-      player.vy>=0
-    ){
-
-      player.y=p.y-player.h;
-
-      player.vy=0;
-
-      player.onGround=true;
-
-    }
-
-  }
-
-  if(player.y>H+100){
-
-    damage(100);
-
-  }
-
-}
-
-function updateEnemies(){
-
-  for(const enemy of enemies){
-
-    let dx=player.x-enemy.x;
-
-    if(Math.abs(dx)>45){
-
-      enemy.x+=
-        Math.sign(dx)*
-        enemy.speed;
-
-    }
-
-    if(enemy.attackCooldown>0)
-      enemy.attackCooldown--;
-
-    if(
-      Math.abs(player.x-enemy.x)<50 &&
-      Math.abs(player.y-enemy.y)<60 &&
-      enemy.attackCooldown<=0
-    ){
-
-      damage(enemy.type?15:10);
-
-      enemy.attackCooldown=50;
-
-    }
-
-    if(
-      player.attackTimer>0 &&
-      Math.abs(
-        player.x+
-        player.direction*55-
-        enemy.x
-      )<65 &&
-      Math.abs(player.y-enemy.y)<65
-    ){
-
-      hitEnemy(enemy);
-
-    }
-
-  }
-
-}
-
-function updateParticles(){
-
-  for(const p of particles){
-
-    p.x+=p.vx;
-    p.y+=p.vy;
-
-    p.vy+=.2;
-
-    p.life--;
-
-  }
-
-  particles=particles.filter(
-    p=>p.life>0
-  );
-
-}
-
-function update(){
-
-  if(!gameRunning)return;
-
-  updatePlayer();
-  updateEnemies();
-  updateParticles();
-
-  cameraX=player.x-W*.35;
-
-  spawnTimer-=1/60;
-
-  if(spawnTimer<=0){
-
-    createEnemy();
-
-    spawnTimer=Math.max(
-      .65,
-      1.6-wave*.08
-    );
-
-  }
-
-  if(score>0 &&
-     score%1000<5 &&
-     wave<Math.floor(score/1000)+1
-  ){
-
-    wave++;
-
-  }
-
-  document.getElementById("score").textContent=score;
-  document.getElementById("wave").textContent=wave;
-
-  document.getElementById("health").style.width=
-    Math.max(0,player.hp)+"%";
-
-}
-
-function drawBackground(){
-
-  let sky=ctx.createLinearGradient(
-    0,0,0,H
-  );
-
-  sky.addColorStop(0,"#050719");
-  sky.addColorStop(1,"#171023");
-
-  ctx.fillStyle=sky;
-
-  ctx.fillRect(0,0,W,H);
-
-  // moon
-
-  ctx.fillStyle="#dffcff";
-
-  ctx.shadowBlur=35;
-  ctx.shadowColor="#00eaff";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    W*.78,
-    100,
-    38,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-  ctx.shadowBlur=0;
-
-  // buildings
-
-  for(let i=0;i<20;i++){
-
-    let x=
-      ((i*160-cameraX*.2)%
-      (W+200))-100;
-
-    let height=
-      100+(i*73)%250;
-
-    ctx.fillStyle=
-      i%2?
-      "#0a1022":
-      "#0d1429";
-
-    ctx.fillRect(
-      x,
-      H-90-height,
-      90,
-      height
-    );
-
-    for(let y=H-120-height;y<H-110;y+=28){
-
-      ctx.fillStyle=
-        i%3===0?
-        "#ff3c82":
-        "#00dfff";
-
-      ctx.fillRect(
-        x+15,
-        y,
-        6,
-        10
-      );
-
-    }
-
-  }
-
-}
-
-function drawPlatforms(){
-
-  for(const p of platforms){
-
-    ctx.fillStyle="#11182c";
-
-    ctx.fillRect(
-      p.x-cameraX,
-      p.y,
-      p.w,
-      p.h
-    );
-
-    ctx.fillStyle="#00eaff";
-
-    ctx.fillRect(
-      p.x-cameraX,
-      p.y,
-      p.w,
-      3
-    );
-
-  }
-
-}
-
-function drawPlayer(){
-
-  ctx.save();
-
-  ctx.translate(
-    player.x-cameraX,
-    player.y
-  );
-
-  if(player.direction<0)
-    ctx.scale(-1,1);
-
-  if(
-    player.invincible>0 &&
-    Math.floor(player.invincible/4)%2===0
-  ){
-
-    ctx.globalAlpha=.35;
-
-  }
-
-  // shadow
-
-  ctx.fillStyle="rgba(0,0,0,.4)";
-
-  ctx.beginPath();
-
-  ctx.ellipse(
-    19,
-    59,
-    25,
-    6,
-    0,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-  // legs
-
-  ctx.strokeStyle="#12182c";
-  ctx.lineWidth=10;
-  ctx.lineCap="round";
-
-  ctx.beginPath();
-
-  ctx.moveTo(12,42);
-  ctx.lineTo(7,58);
-
-  ctx.moveTo(27,42);
-  ctx.lineTo(32,58);
-
-  ctx.stroke();
-
-  // body
-
-  ctx.fillStyle="#10172b";
-
-  ctx.fillRect(
-    5,
+let enemies=&#91;&#93;;
+let particles=&#91;&#93;;
+let platforms=&#91;&#93;;
+let boss=null;
+let cameraX=0;
+let score=0;
+let wave=1;
+let spawnTimer=0;
+let combo=0;
+let comboTimer=0;
+function reset\(\)\{
+ score=0;
+ wave=1;
+ cameraX=0;
+ boss=null;
+ enemies=&#91;&#93;;
+ particles=&#91;&#93;;
+ player=\{
+  x:150,y:H\-180,w:38,h:58,
+  vx:0,vy:0,hp:100,direction:1,
+  ground:false,wall:false,
+  attack:0,attackCooldown:0,
+  dash:0,dashCooldown:0,
+  invincible:0,
+  combo:0,comboCooldown:0
+ \};
+ platforms=&#91;
+  \{x:\-1000,y:H\-90,w:6000,h:40\}
+ &#93;;
+ spawnTimer=1;
+ combo=0;
+ comboTimer=0;
+\}
+function message\(text\)\{
+ const m=document\.getElementById\("message"\);
+ m\.textContent=text;
+ m\.style\.opacity=1;
+ clearTimeout\(m\.timer\);
+ m\.timer=setTimeout\(\(\)=\>m\.style\.opacity=0,850\);
+\}
+function comboText\(\)\{
+ const c=document\.getElementById\("combo"\);
+ c\.textContent="COMBO x"\+combo;
+ c\.style\.opacity=1;
+ clearTimeout\(c\.timer\);
+ c\.timer=setTimeout\(\(\)=\>c\.style\.opacity=0,700\);
+\}
+function particle\(x,y,type\)\{
+ particles\.push\(\{
+  x,y,
+  vx:\(Math\.random\(\)\-\.5\)\*9,
+  vy:\(Math\.random\(\)\-\.5\)\*9,
+  life:25\+Math\.random\(\)\*30,
+  type
+ \}\);
+\}
+function spawnEnemy\(\)\{
+ enemies\.push\(\{
+  x:cameraX\+W\+100\+Math\.random\(\)\*250,
+  y:H\-145,w:40,h:55,
+  hp:50,maxHP:50,
+  speed:1\.1\+wave\*\.08,
+  attackCooldown:0
+ \}\);
+\}
+function spawnBoss\(\)\{
+ boss=\{
+  x:cameraX\+W\+300,
+  y:H\-185,w:70,h:95,
+  hp:700,maxHP:700,
+  speed:1\.3,
+  attackCooldown:80,
+  skillCooldown:180,
+  dash:0
+ \};
+ document\.getElementById\("bossUI"\)\.style\.display="block";
+ message\("SHOGUN ZERO"\);
+\}
+function hurt\(amount\)\{
+ if\(player\.invincible\>0\)return;
+ player\.hp\-=amount;
+ player\.invincible=45;
+ for\(let i=0;i<10;i\+\+\)
+  particle\(player\.x\+20,player\.y\+25,"hit"\);
+ if\(player\.hp<=0\)\{
+  running=false;
+  document\.getElementById\("controls"\)\.style\.display="none";
+  document\.getElementById\("hud"\)\.style\.display="none";
+  document\.getElementById\("bossUI"\)\.style\.display="none";
+  document\.getElementById\("finalScore"\)\.textContent=score;
+  document\.getElementById\("gameover"\)\.style\.display="flex";
+ \}
+\}
+function hitEnemy\(enemy,damage\)\{
+ enemy\.hp\-=damage;
+ for\(let i=0;i<10;i\+\+\)
+  particle\(enemy\.x\+20,enemy\.y\+25,"slash"\);
+ if\(enemy\.hp<=0\)\{
+  score\+=100\*player\.combo;
+  for\(let i=0;i<18;i\+\+\)
+   particle\(enemy\.x\+20,enemy\.y\+25,"death"\);
+  enemies\.splice\(enemies\.indexOf\(enemy\),1\);
+ \}
+\}
+function attack\(\)\{
+ if\(player\.attackCooldown\>0\)return;
+ player\.combo\+\+;
+ if\(player\.combo\>3\)player\.combo=1;
+ player\.attack=13;
+ player\.attackCooldown=17;
+ player\.comboCooldown=55;
+ combo=player\.combo;
+ comboTimer=55;
+ comboText\(\);
+\}
+function updatePlayer\(\)\{
+ let move=0;
+ if\(input\.left\)move\-\-;
+ if\(input\.right\)move\+\+;
+ player\.vx\+=move\*\.8;
+ player\.vx\*=\.84;
+ player\.vx=Math\.max\(\-7,Math\.min\(7,player\.vx\)\);
+ if\(move\)player\.direction=move;
+ player\.wall=false;
+ /\*
+  벽타기:
+  화면 좌우 경계 또는 플랫폼 주변에 붙어
+  떨어지는 속도를 줄인다\.
+ \*/
+ const nearWall=
+  player\.x<35 \|\|
+  player\.x\>cameraX\+W\-player\.w\-35;
+ if\(\!player\.ground && nearWall && move\!==0\)\{
+  player\.wall=true;
+  if\(player\.vy\>2\)player\.vy=2;
+  if\(input\.jump\)\{
+   player\.vy=\-11;
+   player\.vx=\-player\.direction\*8;
+  \}
+ \}
+ if\(input\.jump && player\.ground\)\{
+  player\.vy=\-14;
+  player\.ground=false;
+ \}
+ if\(input\.attack\)\{
+  attack\(\);
+ \}
+ /\*
+  공중 대시 가능
+ \*/
+ if\(input\.dash && player\.dashCooldown<=0\)\{
+  player\.vx=player\.direction\*16;
+  player\.vy\*=\.2;
+  player\.dash=13;
+  player\.dashCooldown=65;
+  player\.invincible=25;
+  for\(let i=0;i<14;i\+\+\)
+   particle\(player\.x,player\.y\+30,"dash"\);
+ \}
+ if\(player\.attackCooldown\>0\)player\.attackCooldown\-\-;
+ if\(player\.dashCooldown\>0\)player\.dashCooldown\-\-;
+ if\(player\.attack\>0\)player\.attack\-\-;
+ if\(player\.dash\>0\)player\.dash\-\-;
+ if\(player\.invincible\>0\)player\.invincible\-\-;
+ if\(comboTimer\>0\)comboTimer\-\-;
+ else\{
+  player\.combo=0;
+  combo=0;
+ \}
+ if\(player\.comboCooldown\>0\)player\.comboCooldown\-\-;
+ player\.vy\+=player\.wall?\.25:\.7;
+ player\.x\+=player\.vx;
+ player\.y\+=player\.vy;
+ player\.ground=false;
+ for\(const p of platforms\)\{
+  if\(
+   player\.x\+player\.w\>p\.x &&
+   player\.x<p\.x\+p\.w &&
+   player\.y\+player\.h\>=p\.y &&
+   player\.y\+player\.h<=p\.y\+24 &&
+   player\.vy\>=0
+  \)\{
+   player\.y=p\.y\-player\.h;
+   player\.vy=0;
+   player\.ground=true;
+  \}
+ \}
+ if\(player\.y\>H\+150\)hurt\(100\);
+\}
+function updateEnemies\(\)\{
+ for\(const enemy of &#91;\.\.\.enemies&#93;\)\{
+  const dx=player\.x\-enemy\.x;
+  if\(Math\.abs\(dx\)\>48\)
+   enemy\.x\+=Math\.sign\(dx\)\*enemy\.speed;
+  if\(enemy\.attackCooldown\>0\)
+   enemy\.attackCooldown\-\-;
+  if\(
+   Math\.abs\(player\.x\-enemy\.x\)<55 &&
+   Math\.abs\(player\.y\-enemy\.y\)<65 &&
+   enemy\.attackCooldown<=0
+  \)\{
+   hurt\(10\);
+   enemy\.attackCooldown=50;
+  \}
+  if\(
+   player\.attack\>0 &&
+   Math\.abs\(
+    enemy\.x\-\(player\.x\+player\.direction\*55\)
+   \)<75 &&
+   Math\.abs\(enemy\.y\-player\.y\)<75
+  \)\{
+   let damage=30\+player\.combo\*10;
+   hitEnemy\(enemy,damage\);
+  \}
+ \}
+\}
+function bossAttack\(\)\{
+ if\(\!boss\)return;
+ const dx=player\.x\-boss\.x;
+ if\(Math\.abs\(dx\)\>90\)
+  boss\.x\+=Math\.sign\(dx\)\*boss\.speed;
+ if\(boss\.attackCooldown\>0\)
+  boss\.attackCooldown\-\-;
+ if\(boss\.skillCooldown\>0\)
+  boss\.skillCooldown\-\-;
+ /\*
+  보스 돌진
+ \*/
+ if\(boss\.dash\>0\)\{
+  boss\.x\+=Math\.sign\(dx\)\*9;
+  boss\.dash\-\-;
+ \}
+ if\(
+  Math\.abs\(player\.x\-boss\.x\)<100 &&
+  Math\.abs\(player\.y\-boss\.y\)<105 &&
+  boss\.attackCooldown<=0
+ \)\{
+  hurt\(20\);
+  boss\.attackCooldown=65;
+ \}
+ /\*
+  보스 광역 스킬
+ \*/
+ if\(boss\.skillCooldown<=0\)\{
+  message\("SHOGUN SLASH\!"\);
+  for\(let i=0;i<25;i\+\+\)
+   particle\(
+    boss\.x\+35,
+    boss\.y\+45,
+    "boss"
+   \);
+  if\(
+   Math\.abs\(player\.x\-boss\.x\)<280
+  \)\{
+   hurt\(30\);
+  \}
+  boss\.skillCooldown=220;
+  boss\.dash=20;
+ \}
+ if\(
+  player\.attack\>0 &&
+  Math\.abs\(
+   boss\.x\-\(player\.x\+player\.direction\*60\)
+  \)<105 &&
+  Math\.abs\(boss\.y\-player\.y\)<120
+ \)\{
+  boss\.hp\-=25\+player\.combo\*8;
+  for\(let i=0;i<7;i\+\+\)
+   particle\(boss\.x\+35,boss\.y\+45,"boss"\);
+  if\(boss\.hp<=0\)\{
+   score\+=3000;
+   boss=null;
+   document\.getElementById\("bossUI"\)\.style\.display="none";
+   message\("BOSS DEFEATED\!"\);
+   for\(let i=0;i<60;i\+\+\)
+    particle\(
+     player\.x\+Math\.random\(\)\*100\-50,
+     player\.y\+Math\.random\(\)\*100\-50,
+     "death"
+    \);
+  \}
+ \}
+\}
+function updateParticles\(\)\{
+ for\(const p of particles\)\{
+  p\.x\+=p\.vx;
+  p\.y\+=p\.vy;
+  p\.vy\+=\.15;
+  p\.life\-\-;
+ \}
+ particles=particles\.filter\(p=\>p\.life\>0\);
+\}
+function update\(\)\{
+ if\(\!running\)return;
+ updatePlayer\(\);
+ updateEnemies\(\);
+ bossAttack\(\);
+ updateParticles\(\);
+ cameraX=player\.x\-W\*\.35;
+ spawnTimer\-=1/60;
+ if\(spawnTimer<=0\)\{
+  spawnEnemy\(\);
+  spawnTimer=Math\.max\(\.55,1\.5\-wave\*\.06\);
+ \}
+ if\(score\>=1000&&\!boss\)\{
+  spawnBoss\(\);
+ \}
+ wave=Math\.floor\(score/500\)\+1;
+ document\.getElementById\("score"\)\.textContent=score;
+ document\.getElementById\("wave"\)\.textContent=wave;
+ document\.getElementById\("hp"\)\.style\.width=
+  Math\.max\(0,player\.hp\)\+"%";
+ if\(boss\)\{
+  document\.getElementById\("bossHP"\)\.style\.width=
+   Math\.max\(0,boss\.hp/boss\.maxHP\*100\)\+"%";
+ \}
+\}
+function background\(\)\{
+ let g=ctx\.createLinearGradient\(0,0,0,H\);
+ g\.addColorStop\(0,"\#050718"\);
+ g\.addColorStop\(1,"\#171022"\);
+ ctx\.fillStyle=g;
+ ctx\.fillRect\(0,0,W,H\);
+ ctx\.fillStyle="\#dffcff";
+ ctx\.shadowBlur=35;
+ ctx\.shadowColor="\#00eaff";
+ ctx\.beginPath\(\);
+ ctx\.arc\(W\*\.78,95,38,0,Math\.PI\*2\);
+ ctx\.fill\(\);
+ ctx\.shadowBlur=0;
+ for\(let i=0;i<20;i\+\+\)\{
+  let x=\(\(i\*150\-cameraX\*\.18\)%\(W\+200\)\)\-100;
+  let height=90\+\(i\*71\)%260;
+  ctx\.fillStyle=i%2?"\#091022":"\#0d1428";
+  ctx\.fillRect\(x,H\-90\-height,90,height\);
+  for\(let y=H\-115\-height;y<H\-100;y\+=27\)\{
+   ctx\.fillStyle=i%3===0?"\#ff3d82":"\#00dfff";
+   ctx\.fillRect\(x\+15,y,6,10\);
+  \}
+ \}
+ ctx\.strokeStyle="rgba\(0,234,255,\.2\)";
+ ctx\.lineWidth=2;
+ ctx\.beginPath\(\);
+ ctx\.moveTo\(0,H\-90\);
+ ctx\.lineTo\(W,H\-90\);
+ ctx\.stroke\(\);
+\}
+function drawPlatforms\(\)\{
+ for\(const p of platforms\)\{
+  ctx\.fillStyle="\#10182d";
+  ctx\.fillRect\(
+   p\.x\-cameraX,p\.y,p\.w,p\.h
+  \);
+  ctx\.fillStyle="\#00eaff";
+  ctx\.fillRect\(
+   p\.x\-cameraX,p\.y,p\.w,3
+  \);
+ \}
+\}
+function drawPlayer\(\)\{
+ ctx\.save\(\);
+ ctx\.translate\(
+  player\.x\-cameraX,
+  player\.y
+ \);
+ if\(player\.direction<0\)ctx\.scale\(\-1,1\);
+ if\(
+  player\.invincible\>0 &&
+  Math\.floor\(player\.invincible/4\)%2===0
+ \)
+  ctx\.globalAlpha=\.35;
+ /\*
+  대시 잔상
+ \*/
+ if\(player\.dash\>0\)\{
+  for\(let i=1;i<5;i\+\+\)\{
+   ctx\.globalAlpha=\.08;
+   ctx\.fillStyle="\#8d5cff";
+   ctx\.fillRect\(
+    \-player\.direction\*i\*13,
     18,
-    28,
+    30,
     28
-  );
-
-  ctx.strokeStyle="#00eaff";
-  ctx.lineWidth=2;
-
-  ctx.strokeRect(
-    5,
-    18,
-    28,
-    28
-  );
-
-  // scarf
-
-  ctx.fillStyle="#ff2e75";
-
-  ctx.fillRect(
-    -12,
-    20,
-    18,
-    7
-  );
-
-  ctx.beginPath();
-
-  ctx.moveTo(-5,26);
-  ctx.lineTo(-30,36);
-  ctx.lineTo(-8,30);
-
-  ctx.fill();
-
-  // head
-
-  ctx.fillStyle="#141a30";
-
-  ctx.beginPath();
-
-  ctx.arc(
-    19,
-    14,
-    16,
-    0,
-    Math.PI*2
-  );
-
-  ctx.fill();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.stroke();
-
-  // eyes
-
-  ctx.fillStyle="#7df9ff";
-
-  ctx.fillRect(
-    9,
-    12,
-    6,
-    3
-  );
-
-  ctx.fillRect(
-    21,
-    12,
-    6,
-    3
-  );
-
-  // sword
-
-  ctx.strokeStyle="#ffffff";
-  ctx.lineWidth=5;
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    29,
-    28
-  );
-
-  ctx.lineTo(
-    55,
-    3
-  );
-
-  ctx.stroke();
-
-  ctx.strokeStyle="#ff3c82";
-  ctx.lineWidth=2;
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    29,
-    28
-  );
-
-  ctx.lineTo(
-    55,
-    3
-  );
-
-  ctx.stroke();
-
-  // attack slash
-
-  if(player.attackTimer>0){
-
-    ctx.strokeStyle="#ffffff";
-
-    ctx.shadowBlur=20;
-    ctx.shadowColor="#00eaff";
-
-    ctx.lineWidth=6;
-
-    ctx.beginPath();
-
-    ctx.arc(
-      30,
-      28,
-      45,
-      -.9,
-      .8
-    );
-
-    ctx.stroke();
-
-    ctx.shadowBlur=0;
-
-  }
-
-  ctx.restore();
-
-}
-
-function drawEnemies(){
-
-  for(const enemy of enemies){
-
-    ctx.save();
-
-    ctx.translate(
-      enemy.x-cameraX,
-      enemy.y
-    );
-
-    ctx.fillStyle=
-      enemy.type?
-      "#35152e":
-      "#161c31";
-
-    ctx.fillRect(
-      5,
-      20,
-      30,
-      35
-    );
-
-    ctx.fillStyle="#101426";
-
-    ctx.beginPath();
-
-    ctx.arc(
-      20,
-      15,
-      16,
-      0,
-      Math.PI*2
-    );
-
-    ctx.fill();
-
-    ctx.fillStyle="#ff3c82";
-
-    ctx.fillRect(
-      9,
-      12,
-      7,
-      3
-    );
-
-    ctx.fillRect(
-      23,
-      12,
-      7,
-      3
-    );
-
-    ctx.strokeStyle="#ff3c82";
-    ctx.lineWidth=4;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      31,
-      30
-    );
-
-    ctx.lineTo(
-      50,
-      8
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-
-  }
-
-}
-
-function drawParticles(){
-
-  for(const p of particles){
-
-    ctx.globalAlpha=p.life/30;
-
-    ctx.fillStyle=p.color;
-
-    ctx.fillRect(
-      p.x-cameraX,
-      p.y,
-      4,
-      4
-    );
-
-  }
-
-  ctx.globalAlpha=1;
-
-}
-
-function draw(){
-
-  drawBackground();
-  drawPlatforms();
-  drawEnemies();
-  drawPlayer();
-  drawParticles();
-
-}
-
-function loop(){
-
-  update();
-  draw();
-
-  requestAnimationFrame(loop);
-
-}
-
-function startGame(e){
-
-  if(e){
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  resetGame();
-
-  gameRunning=true;
-
-  document.getElementById("menu").style.display="none";
-
-  document.getElementById("hud").style.display="flex";
-
-  document.getElementById("controls").style.display="block";
-
-}
-
-function restartGame(e){
-
-  if(e){
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  document.getElementById("gameOver").style.display="none";
-
-  startGame();
-
-}
-
-const startButton=
-  document.getElementById("startButton");
-
-const restartButton=
-  document.getElementById("restart");
-
-startButton.addEventListener(
-  "click",
-  startGame
-);
-
-startButton.addEventListener(
-  "touchend",
-  startGame,
-  {passive:false}
-);
-
-restartButton.addEventListener(
-  "click",
-  restartGame
-);
-
-restartButton.addEventListener(
-  "touchend",
-  restartGame,
-  {passive:false}
-);
-
-resetGame();
-
-loop();
-
-</script>
-
-</body>
-</html>
+   \);
+  \}
+  ctx\.globalAlpha=1;
+ \}
+ ctx\.strokeStyle="\#11172a";
+ ctx\.lineWidth=10;
+ ctx\.lineCap="round";
+ ctx\.beginPath\(\);
+ ctx\.moveTo\(12,42\);
+ ctx\.lineTo\(7,58\);
+ ctx\.moveTo\(27,42\);
+ ctx\.lineTo\(32,58\);
+ ctx\.stroke\(\);
+ ctx\.fillStyle="\#11172c";
+ ctx\.fillRect\(5,18,28,28\);
+ ctx\.strokeStyle="\#00eaff";
+ ctx\.lineWidth=2;
+ ctx\.strokeRect\(5,18,28,28\);
+ ctx\.fillStyle="\#ff2d73";
+ ctx\.fillRect\(\-10,20,17,7\);
+ ctx\.beginPath\(\);
+ ctx\.moveTo\(\-4,26\);
+ ctx\.lineTo\(\-30,36\);
+ ctx\.lineTo\(\-8,30\);
+ ctx\.fill\(\);
+ ctx\.fillStyle="\#151b30";
+ ctx\.beginPath\(\);
+ ctx\.arc\(19,14,16,0,Math\.PI\*2\);
+ ctx\.fill\(\);
+ ctx\.strokeStyle="\#00eaff";
+ ctx\.stroke\(\);
+ ctx\.fillStyle="\#7df9ff";
+ ctx\.fillRect\(9,12,6,3\);
+ ctx\.fillRect\(21,12,6,3\);
+ ctx\.strokeStyle="\#fff";
+ ctx\.lineWidth=5;
+ ctx\.beginPath\(\);
+ ctx\.moveTo\(29,28\);
+ ctx\.lineTo\(56,3\);
+ ctx\.stroke\(\);
+ ctx\.strokeStyle="\#ff3d82";
+ ctx\.lineWidth=2;
+ ctx\.beginPath\(\);
+ ctx\.moveTo\(29,28\);
+ ctx\.lineTo\(56,3\);
+ ctx\.stroke\(\);
+ /\*
+  콤보 공격 이펙트
+ \*/
+ if\(player\.attack\>0\)\{
+  let angle;
+  if\(player\.combo===1\)
+   angle=\-\.9;
+  else if\(player\.combo===2\)
+   angle=\-1\.2;
+  else
+   angle=\-\.3;
+  ctx\.strokeStyle=
+   player\.combo===3?
+   "\#ffea70":
+   "\#ffffff";
+  ctx\.shadowBlur=25;
+  ctx\.shadowColor=
+   player\.combo===3?
+   "\#ff3d82":
+   "\#00eaff";
+  ctx\.lineWidth=
+   player\.combo===3?10:6;
+  ctx\.beginPath\(\);
+  ctx\.arc\(
+   30,
+   28,
+   48\+player\.combo\*5,
+   angle,
+   angle\+1\.8
+  \);
+  ctx\.stroke\(\);
+  ctx\.shadowBlur=0;
+ \}
+ /\*
+  벽타기 이펙트
+ \*/
+ if\(player\.wall\)\{
+  ctx\.strokeStyle="\#00eaff";
+  ctx\.lineWidth=3;
+  ctx\.beginPath\(\);
+  ctx\.moveTo\(\-8,8\);
+  ctx\.lineTo\(\-15,0\);
+  ctx\.stroke\(\);
+ \}
+ ctx\.restore\(\);
+\}
+function drawEnemies\(\)\{
+ for\(const e of enemies\)\{
+  ctx\.save\(\);
+  ctx\.translate\(
+   e\.x\-cameraX,
+   e\.y
+  \);
+  ctx\.fillStyle="\#3b1632";
+  ctx\.fillRect\(5,20,30,35\);
+  ctx\.fillStyle="\#11162a";
+  ctx\.beginPath\(\);
+  ctx\.arc\(20,15,16,0,Math\.PI\*2\);
+  ctx\.fill\(\);
+  ctx\.fillStyle="\#ff3d82";
+  ctx\.fillRect\(9,12,7,3\);
+  ctx\.fillRect\(23,12,7,3\);
+  ctx\.strokeStyle="\#ff3d82";
+  ctx\.lineWidth=4;
+  ctx\.beginPath\(\);
+  ctx\.moveTo\(31,30\);
+  ctx\.lineTo\(51,8\);
+  ctx\.stroke\(\);
+  ctx\.restore\(\);
+ \}
+\}
+function drawBoss\(\)\{
+ if\(\!boss\)return;
+ ctx\.save\(\);
+ ctx\.translate\(
+  boss\.x\-cameraX,
+  boss\.y
+ \);
+ if\(boss\.dash\>0\)\{
+  ctx\.globalAlpha=\.2;
+  ctx\.fillStyle="\#ff3d82";
+  for\(let i=1;i<5;i\+\+\)
+   ctx\.fillRect\(\-i\*20,25,60,70\);
+  ctx\.globalAlpha=1;
+ \}
+ ctx\.fillStyle="\#26102c";
+ ctx\.strokeStyle="\#ff3d82";
+ ctx\.lineWidth=3;
+ ctx\.fillRect\(7,25,58,70\);
+ ctx\.strokeRect\(7,25,58,70\);
+ ctx\.fillStyle="\#0d1223";
+ ctx\.beginPath\(\);
+ ctx\.arc\(36,23,28,0,Math\.PI\*2\);
+ ctx\.fill\(\);
+ ctx\.stroke\(\);
+ ctx\.fillStyle="\#ff3d82";
+ ctx\.fillRect\(16,20,13,4\);
+ ctx\.fillRect\(43,20,13,4\);
+ ctx\.strokeStyle="\#fff";
+ ctx\.lineWidth=7;
+ ctx\.beginPath\(\);
+ ctx\.moveTo\(58,48\);
+ ctx\.lineTo\(95,8\);
+ ctx\.stroke\(\);
+ ctx\.strokeStyle="\#ff3d82";
+ ctx\.lineWidth=3;
+ ctx\.beginPath\(\);
+ ctx\.moveTo\(58,48\);
+ ctx\.lineTo\(95,8\);
+ ctx\.stroke\(\);
+ ctx\.restore\(\);
+\}
+function drawParticles\(\)\{
+ for\(const p of particles\)\{
+  ctx\.globalAlpha=Math\.max\(0,p\.life/45\);
+  if\(p\.type==="death"\)
+   ctx\.fillStyle="\#ff3d82";
+  else if\(p\.type==="dash"\)
+   ctx\.fillStyle="\#9a6cff";
+  else if\(p\.type==="boss"\)
+   ctx\.fillStyle="\#ffea70";
+  else
+   ctx\.fillStyle="\#7df9ff";
+  ctx\.fillRect\(
+   p\.x\-cameraX,
+   p\.y,
+   5,
+   5
+  \);
+ \}
+ ctx\.globalAlpha=1;
+\}
+function draw\(\)\{
+ background\(\);
+ drawPlatforms\(\);
+ drawEnemies\(\);
+ drawBoss\(\);
+ drawPlayer\(\);
+ drawParticles\(\);
+\}
+function loop\(\)\{
+ update\(\);
+ draw\(\);
+ requestAnimationFrame\(loop\);
+\}
+function startGame\(e\)\{
+ if\(e\)\{
+  e\.preventDefault\(\);
+  e\.stopPropagation\(\);
+ \}
+ reset\(\);
+ running=true;
+ document\.getElementById\("menu"\)\.style\.display="none";
+ document\.getElementById\("hud"\)\.style\.display="flex";
+ document\.getElementById\("controls"\)\.style\.display="block";
+ message\("GO\!"\);
+\}
+function retryGame\(e\)\{
+ if\(e\)\{
+  e\.preventDefault\(\);
+  e\.stopPropagation\(\);
+ \}
+ document\.getElementById\("gameover"\)\.style\.display="none";
+ startGame\(\);
+\}
+document\.getElementById\("start"\)\.addEventListener\(
+ "click",startGame
+\);
+document\.getElementById\("start"\)\.addEventListener\(
+ "touchend",startGame,\{passive:false\}
+\);
+document\.getElementById\("retry"\)\.addEventListener\(
+ "click",retryGame
+\);
+document\.getElementById\("retry"\)\.addEventListener\(
+ "touchend",retryGame,\{passive:false\}
+\);
+reset\(\);
+loop\(\);
+</script\>
+</body\>
+</html\>
