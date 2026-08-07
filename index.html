@@ -1,2323 +1,1335 @@
-<!DOCTYPE html>
+/* =========================
 
-<html lang="ko">
+   SHADOW NINJA 2부
 
-<head>
+   스킬 + 적 + 벽타기
 
-<meta charset="UTF-8">
+========================= */
 
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+let enemies = [];
 
-<title>SHADOW NINJA</title>
+let walls = [];
 
-<style>
+let skill1Cooldown = 0;
 
-*{
+let skill2Cooldown = 0;
 
-  box-sizing:border-box;
+let ultimateCooldown = 0;
 
-  margin:0;
+let skillEffect = [];
 
-  padding:0;
+let wallCling = false;
 
-  user-select:none;
+/* =========================
 
-  -webkit-user-select:none;
+   스킬 버튼 생성
 
-}
+========================= */
 
-html,body{
+const skillBox = document.createElement("div");
 
-  width:100%;
+skillBox.style.position = "fixed";
 
-  height:100%;
+skillBox.style.zIndex = "8";
 
-  overflow:hidden;
+skillBox.style.right = "15px";
 
-  background:#02040a;
+skillBox.style.bottom = "175px";
 
-  touch-action:none;
+skillBox.style.display = "none";
 
-  font-family:Arial,sans-serif;
+skillBox.style.gap = "8px";
 
-}
+document.body.appendChild(skillBox);
 
-canvas{
+function makeSkillButton(text){
 
-  position:fixed;
+    const b = document.createElement("div");
 
-  inset:0;
+    b.textContent = text;
 
-  width:100%;
+    b.style.width = "58px";
 
-  height:100%;
+    b.style.height = "45px";
 
-}
+    b.style.border = "2px solid #00eaff";
 
-#menu{
+    b.style.borderRadius = "12px";
 
-  position:fixed;
+    b.style.background = "#061126dd";
 
-  inset:0;
+    b.style.color = "#ffffff";
 
-  z-index:20;
+    b.style.display = "flex";
 
-  display:flex;
+    b.style.alignItems = "center";
 
-  align-items:center;
+    b.style.justifyContent = "center";
 
-  justify-content:center;
+    b.style.fontSize = "11px";
 
-  background:radial-gradient(circle,#142b42,#02040a 75%);
+    b.style.fontWeight = "bold";
 
-}
+    skillBox.appendChild(b);
 
-.box{
-
-  width:88%;
-
-  max-width:460px;
-
-  padding:32px;
-
-  text-align:center;
-
-  border:2px solid #00eaff;
-
-  border-radius:24px;
-
-  background:#030817ee;
-
-  box-shadow:0 0 40px #00eaff55;
+    return b;
 
 }
 
-h1{
+const skill1Button = makeSkillButton("SLASH");
 
-  color:white;
+const skill2Button = makeSkillButton("SHURIKEN");
 
-  font-size:48px;
+const ultimateButton = makeSkillButton("ULT");
 
-  line-height:.9;
+/* =========================
 
-  letter-spacing:4px;
+   스킬 입력
 
-  text-shadow:0 0 25px #00eaff;
+========================= */
 
-}
+function useSkill1(){
 
-.sub{
+    if(skill1Cooldown > 0) return;
 
-  color:#00eaff;
+    skill1Cooldown = 70;
 
-  margin:18px 0 28px;
+    player.attack = 18;
 
-  letter-spacing:5px;
+    player.vx = player.direction * 12;
 
-}
+    for(let i=0;i<18;i++){
 
-#start{
+        skillEffect.push({
 
-  width:100%;
+            x:player.x + player.direction * 45,
 
-  padding:18px;
+            y:player.y + 25,
 
-  border:0;
+            vx:player.direction * (4 + Math.random()*5),
 
-  border-radius:14px;
+            vy:(Math.random()-.5)*5,
 
-  background:linear-gradient(90deg,#00d9ff,#765cff);
+            life:35,
 
-  color:white;
+            type:"slash"
 
-  font-size:20px;
-
-  font-weight:bold;
-
-}
-
-#hud{
-
-  display:none;
-
-  position:fixed;
-
-  z-index:10;
-
-  top:12px;
-
-  left:12px;
-
-  right:12px;
-
-  justify-content:space-between;
-
-  pointer-events:none;
-
-  color:white;
-
-}
-
-.hud{
-
-  background:#050b18dd;
-
-  border:1px solid #00eaff77;
-
-  border-radius:12px;
-
-  padding:9px 12px;
-
-}
-
-#hpbar{
-
-  width:140px;
-
-  height:9px;
-
-  margin-top:5px;
-
-  background:#222;
-
-  border-radius:8px;
-
-  overflow:hidden;
-
-}
-
-#hp{
-
-  width:100%;
-
-  height:100%;
-
-  background:#00eaff;
-
-}
-
-#controls{
-
-  display:none;
-
-  position:fixed;
-
-  z-index:15;
-
-  inset:0;
-
-  pointer-events:none;
-
-}
-
-.btn{
-
-  position:absolute;
-
-  width:70px;
-
-  height:70px;
-
-  border-radius:50%;
-
-  border:2px solid #ffffff33;
-
-  background:#061027dd;
-
-  color:white;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  font-size:25px;
-
-  font-weight:bold;
-
-  pointer-events:auto;
-
-}
-
-#left{
-
-  left:15px;
-
-  bottom:18px;
-
-}
-
-#right{
-
-  left:98px;
-
-  bottom:18px;
-
-}
-
-#jump{
-
-  right:105px;
-
-  bottom:18px;
-
-  color:#00eaff;
-
-}
-
-#attack{
-
-  right:18px;
-
-  bottom:18px;
-
-  color:#ff3972;
-
-}
-
-#dash{
-
-  right:61px;
-
-  bottom:99px;
-
-  width:55px;
-
-  height:55px;
-
-  font-size:10px;
-
-  color:#a878ff;
-
-}
-
-#skills{
-
-  display:none;
-
-  position:fixed;
-
-  z-index:16;
-
-  right:15px;
-
-  bottom:170px;
-
-  gap:7px;
-
-}
-
-.skill{
-
-  width:60px;
-
-  height:44px;
-
-  border:2px solid #00eaff;
-
-  border-radius:11px;
-
-  background:#061027ee;
-
-  color:white;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  font-size:9px;
-
-  font-weight:bold;
-
-}
-
-</style>
-
-</head>
-
-<body>
-
-<canvas id="game"></canvas>
-
-<div id="menu">
-
-  <div class="box">
-
-    <h1>SHADOW<br>NINJA</h1>
-
-    <div class="sub">NEON RISE</div>
-
-    <button id="start">START MISSION</button>
-
-  </div>
-
-</div>
-
-<div id="hud">
-
-  <div class="hud">
-
-    HP
-
-    <div id="hpbar">
-
-      <div id="hp"></div>
-
-    </div>
-
-  </div>
-
-  <div class="hud">
-
-    SCORE <span id="score">0</span>
-
-  </div>
-
-</div>
-
-<div id="controls">
-
-  <div class="btn" id="left">◀</div>
-
-  <div class="btn" id="right">▶</div>
-
-  <div class="btn" id="jump">↑</div>
-
-  <div class="btn" id="attack">⚔</div>
-
-  <div class="btn" id="dash">DASH</div>
-
-</div>
-
-<div id="skills">
-
-  <div class="skill" id="skill1">SLASH</div>
-
-  <div class="skill" id="skill2">SHURIKEN</div>
-
-  <div class="skill" id="skill3">ULT</div>
-
-</div>
-
-<script>
-
-const canvas=document.getElementById("game");
-
-const ctx=canvas.getContext("2d");
-
-let W=innerWidth;
-
-let H=innerHeight;
-
-function resize(){
-
-  W=innerWidth;
-
-  H=innerHeight;
-
-  canvas.width=W;
-
-  canvas.height=H;
-
-}
-
-addEventListener("resize",resize);
-
-resize();
-
-const keys={
-
-  left:false,
-
-  right:false,
-
-  jump:false,
-
-  attack:false,
-
-  dash:false
-
-};
-
-let jumpPressed=false;
-
-function bindButton(id,key){
-
-  const b=document.getElementById(id);
-
-  b.addEventListener("pointerdown",e=>{
-
-    e.preventDefault();
-
-    keys[key]=true;
-
-    if(key==="jump"){
-
-      jumpPressed=true;
+        });
 
     }
 
-  });
-
-  b.addEventListener("pointerup",e=>{
-
-    e.preventDefault();
-
-    keys[key]=false;
-
-  });
-
-  b.addEventListener("pointercancel",()=>{
-
-    keys[key]=false;
-
-  });
-
 }
 
-bindButton("left","left");
+function useSkill2(){
 
-bindButton("right","right");
+    if(skill2Cooldown > 0) return;
 
-bindButton("jump","jump");
+    skill2Cooldown = 110;
 
-bindButton("attack","attack");
+    skillEffect.push({
 
-bindButton("dash","dash");
+        x:player.x + player.direction * 35,
 
-addEventListener("keydown",e=>{
+        y:player.y + 20,
 
-  if(e.code==="ArrowLeft"){
+        vx:player.direction * 12,
 
-    keys.left=true;
+        vy:0,
 
-  }
+        life:90,
 
-  if(e.code==="ArrowRight"){
-
-    keys.right=true;
-
-  }
-
-  if(e.code==="ArrowUp" || e.code==="Space"){
-
-    if(!keys.jump){
-
-      jumpPressed=true;
-
-    }
-
-    keys.jump=true;
-
-  }
-
-  if(e.code==="KeyJ"){
-
-    keys.attack=true;
-
-  }
-
-  if(e.code==="ShiftLeft"){
-
-    keys.dash=true;
-
-  }
-
-  if(e.code==="Digit1"){
-
-    useSlash();
-
-  }
-
-  if(e.code==="Digit2"){
-
-    useShuriken();
-
-  }
-
-  if(e.code==="Digit3"){
-
-    useUltimate();
-
-  }
-
-});
-
-addEventListener("keyup",e=>{
-
-  if(e.code==="ArrowLeft"){
-
-    keys.left=false;
-
-  }
-
-  if(e.code==="ArrowRight"){
-
-    keys.right=false;
-
-  }
-
-  if(e.code==="ArrowUp" || e.code==="Space"){
-
-    keys.jump=false;
-
-  }
-
-  if(e.code==="KeyJ"){
-
-    keys.attack=false;
-
-  }
-
-  if(e.code==="ShiftLeft"){
-
-    keys.dash=false;
-
-  }
-
-});
-
-let running=false;
-
-let cameraX=0;
-
-let score=0;
-
-let enemies=[];
-
-let particles=[];
-
-let effects=[];
-
-let slashCooldown=0;
-
-let shurikenCooldown=0;
-
-let ultimateCooldown=0;
-
-let shake=0;
-
-let flash=0;
-
-const ground={
-
-  x:-100000,
-
-  y:0,
-
-  w:200000,
-
-  h:250
-
-};
-
-const player={
-
-  x:250,
-
-  y:200,
-
-  w:74,
-
-  h:108,
-
-  vx:0,
-
-  vy:0,
-
-  maxSpeed:5.2,
-
-  acceleration:.55,
-
-  friction:.78,
-
-  jumpPower:10.5,
-
-  hp:100,
-
-  ground:false,
-
-  wall:false,
-
-  wallSide:0,
-
-  jumps:0,
-
-  maxJumps:2,
-
-  direction:1,
-
-  attackTimer:0,
-
-  dashTimer:0,
-
-  invincible:0,
-
-  walkTime:0,
-
-  flip:0,
-
-  wallTime:0,
-
-  attackAnim:0
-
-};
-
-function createEnemies(){
-
-  enemies=[];
-
-  for(let i=0;i<80;i++){
-
-    const x=900+i*500;
-
-    enemies.push({
-
-      x:x,
-
-      y:H-250-58,
-
-      w:62,
-
-      h:82,
-
-      hp:100,
-
-      maxHp:100,
-
-      speed:1.1,
-
-      attack:0,
-
-      dir:-1
+        type:"shuriken"
 
     });
-
-  }
-
-}
-
-function particle(x,y,type="normal"){
-
-  particles.push({
-
-    x:x,
-
-    y:y,
-
-    vx:(Math.random()-.5)*7,
-
-    vy:(Math.random()-.5)*7,
-
-    life:30,
-
-    type:type
-
-  });
-
-}
-
-function updateParticles(){
-
-  for(const p of particles){
-
-    p.x+=p.vx;
-
-    p.y+=p.vy;
-
-    p.vy+=.12;
-
-    p.life--;
-
-  }
-
-  particles=particles.filter(p=>p.life>0);
-
-}
-
-function useSlash(){
-
-  if(slashCooldown>0){
-
-    return;
-
-  }
-
-  slashCooldown=45;
-
-  player.attackTimer=22;
-
-  player.attackAnim=1;
-
-  for(let i=0;i<20;i++){
-
-    effects.push({
-
-      x:player.x+player.direction*40,
-
-      y:player.y+45,
-
-      vx:player.direction*(2+Math.random()*6),
-
-      vy:(Math.random()-.5)*6,
-
-      life:24,
-
-      type:"slash"
-
-    });
-
-  }
-
-}
-
-function useShuriken(){
-
-  if(shurikenCooldown>0){
-
-    return;
-
-  }
-
-  shurikenCooldown=80;
-
-  effects.push({
-
-    x:player.x+player.direction*50,
-
-    y:player.y+40,
-
-    vx:player.direction*10,
-
-    vy:0,
-
-    life:100,
-
-    type:"shuriken"
-
-  });
 
 }
 
 function useUltimate(){
 
-  if(ultimateCooldown>0){
+    if(ultimateCooldown > 0) return;
 
-    return;
+    ultimateCooldown = 300;
 
-  }
+    player.invincible = 100;
 
-  ultimateCooldown=300;
+    player.attack = 30;
 
-  player.invincible=100;
+    player.vx = player.direction * 4;
 
-  shake=5;
+    for(let i=0;i<60;i++){
 
-  flash=10;
+        skillEffect.push({
 
-  for(let i=0;i<80;i++){
+            x:player.x + (Math.random()-.5)*180,
 
-    effects.push({
+            y:player.y + (Math.random()-.5)*120,
 
-      x:player.x+(Math.random()-.5)*500,
+            vx:(Math.random()-.5)*12,
 
-      y:player.y+(Math.random()-.5)*300,
+            vy:(Math.random()-.5)*12,
 
-      vx:(Math.random()-.5)*9,
+            life:60,
 
-      vy:(Math.random()-.5)*9,
+            type:"ultimate"
 
-      life:55,
-
-      type:"ult"
-
-    });
-
-  }
-
-  for(const e of enemies){
-
-    if(Math.abs(e.x-player.x)<360){
-
-      e.hp-=160;
+        });
 
     }
 
-  }
+    for(const enemy of enemies){
+
+        if(Math.abs(enemy.x-player.x)<260){
+
+            enemy.hp -= 150;
+
+        }
+
+    }
 
 }
 
-document.getElementById("skill1")
+skill1Button.addEventListener(
 
-.addEventListener("pointerdown",useSlash);
+    "pointerdown",
 
-document.getElementById("skill2")
+    e=>{
 
-.addEventListener("pointerdown",useShuriken);
+        e.preventDefault();
 
-document.getElementById("skill3")
-
-.addEventListener("pointerdown",useUltimate);
-
-function wallCheck(){
-
-  player.wall=false;
-
-  player.wallSide=0;
-
-  const wallX1=Math.floor(player.x/500)*500+380;
-
-  if(
-
-    player.x+player.w>wallX1 &&
-
-    player.x<wallX1+28 &&
-
-    player.y+player.h>H-500 &&
-
-    player.y<H-250
-
-  ){
-
-    player.wall=true;
-
-    player.wallSide=1;
-
-  }
-
-}
-
-function updatePlayer(){
-
-  let move=0;
-
-  if(keys.left){
-
-    move--;
-
-  }
-
-  if(keys.right){
-
-    move++;
-
-  }
-
-  if(move!==0){
-
-    player.vx+=move*player.acceleration;
-
-    player.direction=move;
-
-    player.walkTime+=Math.abs(player.vx)*.12;
-
-  }else{
-
-    player.vx*=player.friction;
-
-  }
-
-  player.vx=Math.max(
-
-    -player.maxSpeed,
-
-    Math.min(player.maxSpeed,player.vx)
-
-  );
-
-  wallCheck();
-
-  if(jumpPressed){
-
-    if(player.wall){
-
-      player.vy=-8.5;
-
-      player.vx=-player.wallSide*6;
-
-      player.wallTime=15;
-
-      player.wall=false;
+        useSkill1();
 
     }
 
-    else if(player.ground){
+);
 
-      player.vy=-player.jumpPower;
+skill2Button.addEventListener(
 
-      player.ground=false;
+    "pointerdown",
 
-      player.jumps=1;
+    e=>{
 
-      player.flip=0;
+        e.preventDefault();
 
-    }
-
-    else if(player.jumps<player.maxJumps){
-
-      player.vy=-player.jumpPower*.92;
-
-      player.jumps++;
-
-      player.flip=0;
+        useSkill2();
 
     }
 
-  }
+);
 
-  jumpPressed=false;
+ultimateButton.addEventListener(
 
-  if(
+    "pointerdown",
 
-    player.wall &&
+    e=>{
 
-    !player.ground &&
+        e.preventDefault();
 
-    player.vy>1
-
-  ){
-
-    player.vy=.8;
-
-    if(keys.jump){
-
-      player.vy=-8;
+        useUltimate();
 
     }
 
-  }
+);
 
-  if(
+/* 키보드 스킬 */
 
-    keys.dash &&
+addEventListener("keydown",e=>{
 
-    player.dashTimer<=0
+    if(e.code==="Digit1")
 
-  ){
+        useSkill1();
 
-    player.vx=player.direction*11;
+    if(e.code==="Digit2")
 
-    player.vy=0;
+        useSkill2();
 
-    player.dashTimer=18;
+    if(e.code==="Digit3")
 
-    player.invincible=25;
-
-    for(let i=0;i<15;i++){
-
-      particle(
-
-        player.x,
-
-        player.y+50,
-
-        "dash"
-
-      );
-
-    }
-
-  }
-
-  if(
-
-    keys.attack &&
-
-    player.attackTimer<=0
-
-  ){
-
-    useSlash();
-
-  }
-
-  if(player.attackTimer>0){
-
-    player.attackTimer--;
-
-  }
-
-  if(player.dashTimer>0){
-
-    player.dashTimer--;
-
-  }
-
-  if(player.invincible>0){
-
-    player.invincible--;
-
-  }
-
-  if(slashCooldown>0){
-
-    slashCooldown--;
-
-  }
-
-  if(shurikenCooldown>0){
-
-    shurikenCooldown--;
-
-  }
-
-  if(ultimateCooldown>0){
-
-    ultimateCooldown--;
-
-  }
-
-  if(!player.wall){
-
-    player.vy+=.55;
-
-  }
-
-  player.x+=player.vx;
-
-  player.y+=player.vy;
-
-  const floorY=H-250;
-
-  if(
-
-    player.y+player.h>=floorY
-
-  ){
-
-    player.y=floorY-player.h;
-
-    player.vy=0;
-
-    if(!player.ground){
-
-      player.jumps=0;
-
-    }
-
-    player.ground=true;
-
-    player.flip=0;
-
-  }else{
-
-    player.ground=false;
-
-  }
-
-  if(player.y>H+300){
-
-    player.y=100;
-
-    player.vy=0;
-
-    player.hp-=15;
-
-  }
-
-  cameraX=player.x-W*.32;
-
-  if(cameraX<0){
-
-    cameraX=0;
-
-  }
-
-}
-
-function updateEnemies(){
-
-  for(const e of enemies){
-
-    const dx=player.x-e.x;
-
-    const d=Math.abs(dx);
-
-    if(d<600){
-
-      e.x+=Math.sign(dx)*e.speed;
-
-    }
-
-    if(e.attack>0){
-
-      e.attack--;
-
-    }
-
-    if(
-
-      d<85 &&
-
-      Math.abs(player.y-e.y)<80 &&
-
-      e.attack<=0
-
-    ){
-
-      if(player.invincible<=0){
-
-        player.hp-=8;
-
-        player.invincible=35;
-
-        flash=5;
-
-      }
-
-      e.attack=70;
-
-    }
-
-    if(
-
-      player.attackTimer>0 &&
-
-      d<120 &&
-
-      Math.abs(player.y-e.y)<100
-
-    ){
-
-      e.hp-=35;
-
-    }
-
-    for(const s of effects){
-
-      if(
-
-        s.type==="shuriken" &&
-
-        Math.abs(s.x-e.x)<55 &&
-
-        Math.abs(s.y-e.y)<70
-
-      ){
-
-        e.hp-=55;
-
-        s.life=0;
-
-      }
-
-    }
-
-    if(e.hp<=0){
-
-      score+=150;
-
-      for(let i=0;i<20;i++){
-
-        particle(
-
-          e.x,
-
-          e.y,
-
-          "enemy"
-
-        );
-
-      }
-
-      e.x+=999999;
-
-    }
-
-  }
-
-}
-
-function updateEffects(){
-
-  for(const s of effects){
-
-    s.x+=s.vx;
-
-    s.y+=s.vy;
-
-    s.life--;
-
-    if(s.type==="shuriken"){
-
-      s.vy+=.02;
-
-    }
-
-  }
-
-  effects=effects.filter(s=>s.life>0);
-
-}
-
-function drawBackground(){
-
-  const g=ctx.createLinearGradient(
-
-    0,0,0,H
-
-  );
-
-  g.addColorStop(0,"#050817");
-
-  g.addColorStop(1,"#160b25");
-
-  ctx.fillStyle=g;
-
-  ctx.fillRect(0,0,W,H);
-
-  ctx.fillStyle="#dfffff";
-
-  ctx.shadowBlur=25;
-
-  ctx.shadowColor="#00eaff";
-
-  ctx.beginPath();
-
-  ctx.arc(
-
-    W*.78,
-
-    90,
-
-    38,
-
-    0,
-
-    Math.PI*2
-
-  );
-
-  ctx.fill();
-
-  ctx.shadowBlur=0;
-
-  for(let i=0;i<40;i++){
-
-    const x=
-
-      ((i*170-cameraX*.18)%
-
-      (W+400))-200;
-
-    const h=
-
-      100+(i*73)%300;
-
-    ctx.fillStyle=
-
-      i%3===0
-
-      ?"#0b1830"
-
-      :"#080d20";
-
-    ctx.fillRect(
-
-      x,
-
-      H-250-h,
-
-      110,
-
-      h
-
-    );
-
-  }
-
-}
-
-function drawGround(){
-
-  const floorY=H-250;
-
-  ctx.fillStyle="#080d18";
-
-  ctx.fillRect(
-
-    0,
-
-    floorY,
-
-    W,
-
-    250
-
-  );
-
-  ctx.fillStyle="#061a2b";
-
-  ctx.fillRect(
-
-    0,
-
-    floorY,
-
-    W,
-
-    12
-
-  );
-
-  ctx.fillStyle="#00eaff";
-
-  ctx.shadowBlur=15;
-
-  ctx.shadowColor="#00eaff";
-
-  ctx.fillRect(
-
-    0,
-
-    floorY,
-
-    W,
-
-    4
-
-  );
-
-  ctx.shadowBlur=0;
-
-  for(
-
-    let x=-cameraX%80;
-
-    x<W;
-
-    x+=80
-
-  ){
-
-    ctx.strokeStyle="#10283c";
-
-    ctx.lineWidth=1;
-
-    ctx.beginPath();
-
-    ctx.moveTo(x,floorY+15);
-
-    ctx.lineTo(x,floorY+250);
-
-    ctx.stroke();
-
-  }
-
-}
-
-function drawWalls(){
-
-  for(let i=1;i<100;i++){
-
-    const x=i*500+380-cameraX;
-
-    if(x<-100 || x>W+100){
-
-      continue;
-
-    }
-
-    ctx.fillStyle="#090d1b";
-
-    ctx.fillRect(
-
-      x,
-
-      H-500,
-
-      28,
-
-      250
-
-    );
-
-    ctx.strokeStyle="#00eaff";
-
-    ctx.lineWidth=3;
-
-    ctx.strokeRect(
-
-      x,
-
-      H-500,
-
-      28,
-
-      250
-
-    );
-
-  }
-
-}
-
-function drawPlayer(){
-
-  const x=player.x-cameraX;
-
-  const y=player.y;
-
-  ctx.save();
-
-  ctx.translate(
-
-    x+player.w/2,
-
-    y+player.h/2
-
-  );
-
-  if(player.direction<0){
-
-    ctx.scale(-1,1);
-
-  }
-
-  if(
-
-    player.invincible>0 &&
-
-    Math.floor(player.invincible/4)%2===0
-
-  ){
-
-    ctx.globalAlpha=.45;
-
-  }
-
-  let rotation=0;
-
-  if(!player.ground){
-
-    rotation=player.flip;
-
-    player.flip+=.15;
-
-  }
-
-  ctx.rotate(rotation);
-
-  const walk=
-
-    player.ground &&
-
-    Math.abs(player.vx)>.35
-
-    ?Math.sin(player.walkTime)*12
-
-    :0;
-
-  if(player.dashTimer>0){
-
-    for(let i=1;i<6;i++){
-
-      ctx.globalAlpha=.1;
-
-      ctx.fillStyle="#00eaff";
-
-      ctx.beginPath();
-
-      ctx.arc(
-
-        -i*18,
-
-        0,
-
-        30,
-
-        0,
-
-        Math.PI*2
-
-      );
-
-      ctx.fill();
-
-    }
-
-    ctx.globalAlpha=1;
-
-  }
-
-  /* 다리 */
-
-  ctx.strokeStyle="#020306";
-
-  ctx.lineWidth=15;
-
-  ctx.lineCap="round";
-
-  ctx.beginPath();
-
-  ctx.moveTo(-15,25);
-
-  ctx.lineTo(-25+walk,65);
-
-  ctx.moveTo(15,25);
-
-  ctx.lineTo(25-walk,65);
-
-  ctx.stroke();
-
-  /* 다리 네온 */
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.beginPath();
-
-  ctx.moveTo(-15,25);
-
-  ctx.lineTo(-25+walk,65);
-
-  ctx.moveTo(15,25);
-
-  ctx.lineTo(25-walk,65);
-
-  ctx.stroke();
-
-  /* 몸 */
-
-  ctx.fillStyle="#020306";
-
-  ctx.beginPath();
-
-  ctx.roundRect(
-
-    -30,
-
-    -30,
-
-    60,
-
-    65,
-
-    16
-
-  );
-
-  ctx.fill();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.stroke();
-
-  /* 몸 네온 */
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=2;
-
-  ctx.beginPath();
-
-  ctx.moveTo(-20,-15);
-
-  ctx.lineTo(20,15);
-
-  ctx.stroke();
-
-  /* 팔 */
-
-  const arm=walk*.7;
-
-  ctx.strokeStyle="#020306";
-
-  ctx.lineWidth=13;
-
-  ctx.beginPath();
-
-  ctx.moveTo(-25,-18);
-
-  ctx.lineTo(-55,8+arm);
-
-  ctx.moveTo(25,-18);
-
-  ctx.lineTo(55,8-arm);
-
-  ctx.stroke();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.beginPath();
-
-  ctx.moveTo(-25,-18);
-
-  ctx.lineTo(-55,8+arm);
-
-  ctx.moveTo(25,-18);
-
-  ctx.lineTo(55,8-arm);
-
-  ctx.stroke();
-
-  /* 머리 */
-
-  ctx.fillStyle="#020306";
-
-  ctx.beginPath();
-
-  ctx.arc(
-
-    0,
-
-    -50,
-
-    34,
-
-    0,
-
-    Math.PI*2
-
-  );
-
-  ctx.fill();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.stroke();
-
-  /* 눈 */
-
-  ctx.fillStyle="#9fffff";
-
-  ctx.shadowBlur=20;
-
-  ctx.shadowColor="#00eaff";
-
-  ctx.fillRect(
-
-    -21,
-
-    -55,
-
-    16,
-
-    7
-
-  );
-
-  ctx.fillRect(
-
-    5,
-
-    -55,
-
-    16,
-
-    7
-
-  );
-
-  ctx.shadowBlur=0;
-
-  /* 스카프 */
-
-  ctx.fillStyle="#00d9ff";
-
-  ctx.beginPath();
-
-  ctx.moveTo(-25,-28);
-
-  ctx.lineTo(-60,-15);
-
-  ctx.lineTo(-90,10);
-
-  ctx.lineTo(-50,-5);
-
-  ctx.fill();
-
-  /* 검 */
-
-  ctx.strokeStyle="white";
-
-  ctx.lineWidth=8;
-
-  ctx.beginPath();
-
-  ctx.moveTo(35,-5);
-
-  ctx.lineTo(92,-55);
-
-  ctx.stroke();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.beginPath();
-
-  ctx.moveTo(35,-5);
-
-  ctx.lineTo(92,-55);
-
-  ctx.stroke();
-
-  /* 공격 */
-
-  if(player.attackTimer>0){
-
-    const progress=
-
-      player.attackTimer/22;
-
-    ctx.save();
-
-    ctx.rotate(
-
-      (1-progress)*1.5-.7
-
-    );
-
-    ctx.strokeStyle="#00eaff";
-
-    ctx.shadowBlur=30;
-
-    ctx.shadowColor="#00eaff";
-
-    ctx.lineWidth=9;
-
-    ctx.beginPath();
-
-    ctx.arc(
-
-      35,
-
-      0,
-
-      75,
-
-      -.9,
-
-      .9
-
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-
-  }
-
-  /* 벽타기 표시 */
-
-  if(player.wall){
-
-    ctx.strokeStyle="#00eaff";
-
-    ctx.lineWidth=4;
-
-    ctx.beginPath();
-
-    ctx.moveTo(-45,-30);
-
-    ctx.lineTo(-70,-45);
-
-    ctx.moveTo(-45,0);
-
-    ctx.lineTo(-72,-5);
-
-    ctx.stroke();
-
-  }
-
-  ctx.restore();
-
-}
-
-function drawEnemies(){
-
-  for(const e of enemies){
-
-    if(e.x>999999){
-
-      continue;
-
-    }
-
-    const x=e.x-cameraX;
-
-    const y=e.y;
-
-    ctx.save();
-
-    ctx.translate(x,y);
-
-    ctx.fillStyle="#05070c";
-
-    ctx.fillRect(
-
-      5,
-
-      20,
-
-      52,
-
-      58
-
-    );
-
-    ctx.strokeStyle="#ff3972";
-
-    ctx.lineWidth=4;
-
-    ctx.strokeRect(
-
-      5,
-
-      20,
-
-      52,
-
-      58
-
-    );
-
-    ctx.fillStyle="#05070c";
-
-    ctx.beginPath();
-
-    ctx.arc(
-
-      31,
-
-      10,
-
-      28,
-
-      0,
-
-      Math.PI*2
-
-    );
-
-    ctx.fill();
-
-    ctx.strokeStyle="#ff3972";
-
-    ctx.stroke();
-
-    ctx.fillStyle="#ff3972";
-
-    ctx.shadowBlur=15;
-
-    ctx.shadowColor="#ff3972";
-
-    ctx.fillRect(
-
-      13,
-
-      6,
-
-      12,
-
-      6
-
-    );
-
-    ctx.fillRect(
-
-      37,
-
-      6,
-
-      12,
-
-      6
-
-    );
-
-    ctx.shadowBlur=0;
-
-    ctx.strokeStyle="#ff3972";
-
-    ctx.lineWidth=7;
-
-    ctx.beginPath();
-
-    ctx.moveTo(48,40);
-
-    ctx.lineTo(78,10);
-
-    ctx.stroke();
-
-    ctx.fillStyle="#240814";
-
-    ctx.fillRect(
-
-      5,
-
-      -28,
-
-      52,
-
-      6
-
-    );
-
-    ctx.fillStyle="#ff3972";
-
-    ctx.fillRect(
-
-      5,
-
-      -28,
-
-      52*(e.hp/e.maxHp),
-
-      6
-
-    );
-
-    ctx.restore();
-
-  }
-
-}
-
-function drawEffects(){
-
-  for(const s of effects){
-
-    ctx.save();
-
-    ctx.translate(
-
-      s.x-cameraX,
-
-      s.y
-
-    );
-
-    if(s.type==="slash"){
-
-      ctx.strokeStyle="#00eaff";
-
-      ctx.shadowBlur=25;
-
-      ctx.shadowColor="#00eaff";
-
-      ctx.lineWidth=6;
-
-      ctx.beginPath();
-
-      ctx.arc(
-
-        0,
-
-        0,
-
-        45,
-
-        -.9,
-
-        .9
-
-      );
-
-      ctx.stroke();
-
-    }
-
-    if(s.type==="shuriken"){
-
-      ctx.strokeStyle="white";
-
-      ctx.shadowBlur=18;
-
-      ctx.shadowColor="#00eaff";
-
-      ctx.lineWidth=4;
-
-      ctx.rotate(
-
-        Date.now()*.02
-
-      );
-
-      for(let i=0;i<4;i++){
-
-        ctx.rotate(Math.PI/2);
-
-        ctx.beginPath();
-
-        ctx.moveTo(0,0);
-
-        ctx.lineTo(28,0);
-
-        ctx.stroke();
-
-      }
-
-    }
-
-    if(s.type==="ult"){
-
-      ctx.fillStyle="#00eaff";
-
-      ctx.shadowBlur=25;
-
-      ctx.shadowColor="#00eaff";
-
-      ctx.beginPath();
-
-      ctx.arc(
-
-        0,
-
-        0,
-
-        8+s.life*.3,
-
-        0,
-
-        Math.PI*2
-
-      );
-
-      ctx.fill();
-
-    }
-
-    ctx.restore();
-
-  }
-
-}
-
-function drawParticles(){
-
-  for(const p of particles){
-
-    ctx.globalAlpha=p.life/30;
-
-    ctx.fillStyle=
-
-      p.type==="enemy"
-
-      ?"#ff3972"
-
-      :"#00eaff";
-
-    ctx.fillRect(
-
-      p.x-cameraX,
-
-      p.y,
-
-      6,
-
-      6
-
-    );
-
-  }
-
-  ctx.globalAlpha=1;
-
-}
-
-function update(){
-
-  if(!running){
-
-    return;
-
-  }
-
-  updatePlayer();
-
-  updateEnemies();
-
-  updateEffects();
-
-  updateParticles();
-
-  score=Math.max(
-
-    score,
-
-    Math.floor(player.x/10)
-
-  );
-
-  document.getElementById("score")
-
-  .textContent=score;
-
-  document.getElementById("hp")
-
-  .style.width=
-
-    Math.max(0,player.hp)+"%";
-
-  document.getElementById("skill1")
-
-  .textContent=
-
-    slashCooldown>0
-
-    ?Math.ceil(slashCooldown/60)
-
-    :"SLASH";
-
-  document.getElementById("skill2")
-
-  .textContent=
-
-    shurikenCooldown>0
-
-    ?Math.ceil(shurikenCooldown/60)
-
-    :"SHURIKEN";
-
-  document.getElementById("skill3")
-
-  .textContent=
-
-    ultimateCooldown>0
-
-    ?Math.ceil(ultimateCooldown/60)
-
-    :"ULT";
-
-  if(shake>0){
-
-    shake*=.9;
-
-  }
-
-  if(flash>0){
-
-    flash--;
-
-  }
-
-  if(player.hp<=0){
-
-    running=false;
-
-    setTimeout(()=>{
-
-      alert(
-
-        "MISSION FAILED!\nSCORE: "+score
-
-      );
-
-      location.reload();
-
-    },100);
-
-  }
-
-}
-
-function draw(){
-
-  ctx.save();
-
-  if(shake>0){
-
-    ctx.translate(
-
-      (Math.random()-.5)*shake,
-
-      (Math.random()-.5)*shake
-
-    );
-
-  }
-
-  drawBackground();
-
-  drawGround();
-
-  drawWalls();
-
-  drawEnemies();
-
-  drawEffects();
-
-  drawPlayer();
-
-  drawParticles();
-
-  ctx.restore();
-
-  if(flash>0){
-
-    ctx.fillStyle=
-
-      "rgba(255,0,70,.1)";
-
-    ctx.fillRect(
-
-      0,
-
-      0,
-
-      W,
-
-      H
-
-    );
-
-  }
-
-}
-
-document.getElementById("start")
-
-.addEventListener("click",()=>{
-
-  running=true;
-
-  createEnemies();
-
-  document.getElementById("menu")
-
-  .style.display="none";
-
-  document.getElementById("hud")
-
-  .style.display="flex";
-
-  document.getElementById("controls")
-
-  .style.display="block";
-
-  document.getElementById("skills")
-
-  .style.display="flex";
+        useUltimate();
 
 });
 
-function gameLoop(){
+/* =========================
 
-  update();
+   강화된 월드
 
-  draw();
+========================= */
 
-  requestAnimationFrame(gameLoop);
+function createWorld(){
+
+    platforms = [];
+
+    walls = [];
+
+    enemies = [];
+
+    for(let i=-10;i<250;i++){
+
+        const gap = 30 + Math.random()*80;
+
+        const px = i * 280;
+
+        const py =
+
+            H - 100 -
+
+            Math.floor(Math.random()*4)*35;
+
+        platforms.push({
+
+            x:px,
+
+            y:py,
+
+            w:230 + Math.random()*70,
+
+            h:35
+
+        });
+
+        /* 수직 벽 */
+
+        if(i % 4 === 2){
+
+            walls.push({
+
+                x:px + 210,
+
+                y:py - 240,
+
+                w:30,
+
+                h:240
+
+            });
+
+        }
+
+        /* 적 생성 */
+
+        if(i > 1 && i % 2 === 0){
+
+            enemies.push({
+
+                x:px + 120,
+
+                y:py - 55,
+
+                w:40,
+
+                h:55,
+
+                hp:70,
+
+                maxHp:70,
+
+                speed:1.2 + i*.015,
+
+                attackCooldown:0
+
+            });
+
+        }
+
+    }
 
 }
 
-gameLoop();
+/* =========================
 
-</script>
+   벽타기
 
-</body>
+========================= */
 
-</html>
+function checkWall(){
+
+    wallCling = false;
+
+    for(const wall of walls){
+
+        const touchingX =
+
+            player.x + player.w > wall.x &&
+
+            player.x < wall.x + wall.w;
+
+        const touchingY =
+
+            player.y + player.h > wall.y &&
+
+            player.y < wall.y + wall.h;
+
+        if(touchingX && touchingY){
+
+            wallCling = true;
+
+            break;
+
+        }
+
+    }
+
+}
+
+/* =========================
+
+   플레이어 강화
+
+========================= */
+
+function updatePlayer(){
+
+    let move = 0;
+
+    if(keys.left)
+
+        move--;
+
+    if(keys.right)
+
+        move++;
+
+    if(move){
+
+        player.vx += move * .8;
+
+        player.direction = move;
+
+        player.anim += .3;
+
+    }else{
+
+        player.vx *= .82;
+
+    }
+
+    player.vx =
+
+        Math.max(
+
+            -8,
+
+            Math.min(8,player.vx)
+
+        );
+
+    checkWall();
+
+    /* 벽타기 */
+
+    if(wallCling && !player.ground){
+
+        player.wall = true;
+
+        if(player.vy > 2)
+
+            player.vy = 2;
+
+        /* ↑를 누르면 벽을 올라감 */
+
+        if(keys.jump){
+
+            player.vy = -7;
+
+        }
+
+    }else{
+
+        player.wall = false;
+
+    }
+
+    /* 일반 점프 */
+
+    if(
+
+        keys.jump &&
+
+        player.ground
+
+    ){
+
+        player.vy = -15;
+
+        player.ground = false;
+
+    }
+
+    /* 벽 점프 */
+
+    if(
+
+        keys.jump &&
+
+        wallCling
+
+    ){
+
+        player.vy = -13;
+
+        player.vx =
+
+            -player.direction * 9;
+
+        player.ground = false;
+
+    }
+
+    /* 대시 */
+
+    if(
+
+        keys.dash &&
+
+        player.dash <= 0
+
+    ){
+
+        player.vx =
+
+            player.direction * 17;
+
+        player.vy *= .2;
+
+        player.dash = 14;
+
+        player.invincible = 30;
+
+        for(let i=0;i<15;i++){
+
+            particle(
+
+                player.x,
+
+                player.y+30
+
+            );
+
+        }
+
+    }
+
+    /* 기본 공격 */
+
+    if(
+
+        keys.attack &&
+
+        player.attack <= 0
+
+    ){
+
+        player.attack = 14;
+
+    }
+
+    if(player.dash > 0)
+
+        player.dash--;
+
+    if(player.attack > 0)
+
+        player.attack--;
+
+    if(player.invincible > 0)
+
+        player.invincible--;
+
+    if(skill1Cooldown > 0)
+
+        skill1Cooldown--;
+
+    if(skill2Cooldown > 0)
+
+        skill2Cooldown--;
+
+    if(ultimateCooldown > 0)
+
+        ultimateCooldown--;
+
+    /* 중력 */
+
+    if(player.wall){
+
+        player.vy += .18;
+
+    }else{
+
+        player.vy += .7;
+
+    }
+
+    player.x += player.vx;
+
+    player.y += player.vy;
+
+    player.ground = false;
+
+    /* 바닥 충돌 */
+
+    for(const p of platforms){
+
+        if(
+
+            player.x + player.w > p.x &&
+
+            player.x < p.x + p.w &&
+
+            player.y + player.h >= p.y &&
+
+            player.y + player.h <= p.y + 25 &&
+
+            player.vy >= 0
+
+        ){
+
+            player.y =
+
+                p.y - player.h;
+
+            player.vy = 0;
+
+            player.ground = true;
+
+        }
+
+    }
+
+    /* 벽 충돌 */
+
+    for(const wall of walls){
+
+        if(
+
+            player.x + player.w > wall.x &&
+
+            player.x < wall.x + wall.w &&
+
+            player.y + player.h > wall.y &&
+
+            player.y < wall.y + wall.h
+
+        ){
+
+            if(player.vx > 0){
+
+                player.x =
+
+                    wall.x - player.w;
+
+            }else if(player.vx < 0){
+
+                player.x =
+
+                    wall.x + wall.w;
+
+            }
+
+        }
+
+    }
+
+    cameraX =
+
+        player.x - W*.35;
+
+}
+
+/* =========================
+
+   적 AI
+
+========================= */
+
+function updateEnemies(){
+
+    for(const enemy of [...enemies]){
+
+        const dx =
+
+            player.x - enemy.x;
+
+        const distance =
+
+            Math.abs(dx);
+
+        /* 플레이어 추적 */
+
+        if(distance < 500){
+
+            enemy.x +=
+
+                Math.sign(dx) *
+
+                enemy.speed;
+
+        }
+
+        /* 공격 쿨다운 */
+
+        if(enemy.attackCooldown > 0)
+
+            enemy.attackCooldown--;
+
+        /* 적 공격 */
+
+        if(
+
+            distance < 55 &&
+
+            Math.abs(
+
+                player.y - enemy.y
+
+            ) < 65 &&
+
+            enemy.attackCooldown <= 0
+
+        ){
+
+            if(player.invincible <= 0){
+
+                player.hp -= 12;
+
+                player.invincible = 45;
+
+            }
+
+            enemy.attackCooldown = 55;
+
+        }
+
+        /* 닌자 공격 */
+
+        if(
+
+            player.attack > 0 &&
+
+            distance < 90 &&
+
+            Math.abs(
+
+                player.y-enemy.y
+
+            ) < 80
+
+        ){
+
+            enemy.hp -= 25;
+
+        }
+
+        /* 스킬 1 */
+
+        for(const s of skillEffect){
+
+            if(
+
+                s.type==="slash" &&
+
+                Math.abs(s.x-enemy.x)<55 &&
+
+                Math.abs(s.y-enemy.y)<70
+
+            ){
+
+                enemy.hp -= 5;
+
+            }
+
+        }
+
+        /* 스킬 2 */
+
+        for(const s of skillEffect){
+
+            if(
+
+                s.type==="shuriken" &&
+
+                Math.abs(s.x-enemy.x)<45 &&
+
+                Math.abs(s.y-enemy.y)<55
+
+            ){
+
+                enemy.hp -= 45;
+
+                s.life = 0;
+
+            }
+
+        }
+
+        /* 죽음 */
+
+        if(enemy.hp <= 0){
+
+            score += 150;
+
+            for(let i=0;i<20;i++){
+
+                particle(
+
+                    enemy.x,
+
+                    enemy.y
+
+                );
+
+            }
+
+            enemies.splice(
+
+                enemies.indexOf(enemy),
+
+                1
+
+            );
+
+        }
+
+    }
+
+    /* HP 0 */
+
+    if(player.hp <= 0){
+
+        player.hp = 0;
+
+        running = false;
+
+        alert(
+
+            "MISSION FAILED!"
+
+        );
+
+        location.reload();
+
+    }
+
+}
+
+/* =========================
+
+   스킬 이펙트
+
+========================= */
+
+function updateSkills(){
+
+    for(const s of skillEffect){
+
+        s.x += s.vx;
+
+        s.y += s.vy;
+
+        s.life--;
+
+    }
+
+    skillEffect =
+
+        skillEffect.filter(
+
+            s=>s.life>0
+
+        );
+
+}
+
+/* =========================
+
+   벽 그리기
+
+========================= */
+
+function drawWalls(){
+
+    for(const wall of walls){
+
+        ctx.fillStyle="#090d1c";
+
+        ctx.fillRect(
+
+            wall.x-cameraX,
+
+            wall.y,
+
+            wall.w,
+
+            wall.h
+
+        );
+
+        ctx.strokeStyle="#00eaff";
+
+        ctx.lineWidth=3;
+
+        ctx.shadowBlur=12;
+
+        ctx.shadowColor="#00eaff";
+
+        ctx.strokeRect(
+
+            wall.x-cameraX,
+
+            wall.y,
+
+            wall.w,
+
+            wall.h
+
+        );
+
+        ctx.shadowBlur=0;
+
+        /* 벽 라인 */
+
+        ctx.strokeStyle="#16445b";
+
+        ctx.lineWidth=2;
+
+        for(
+
+            let y=wall.y+20;
+
+            y<wall.y+wall.h;
+
+            y+=35
+
+        ){
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+
+                wall.x-cameraX,
+
+                y
+
+            );
+
+            ctx.lineTo(
+
+                wall.x-cameraX+wall.w,
+
+                y
+
+            );
+
+            ctx.stroke();
+
+        }
+
+    }
+
+}
+
+/* =========================
+
+   적 그리기
+
+========================= */
+
+function drawEnemies(){
+
+    for(const e of enemies){
+
+        const x =
+
+            e.x-cameraX;
+
+        const y = e.y;
+
+        ctx.save();
+
+        ctx.translate(x,y);
+
+        /* 몸 */
+
+        ctx.fillStyle="#07090f";
+
+        ctx.fillRect(
+
+            5,
+
+            20,
+
+            30,
+
+            35
+
+        );
+
+        /* 머리 */
+
+        ctx.beginPath();
+
+        ctx.arc(
+
+            20,
+
+            14,
+
+            16,
+
+            0,
+
+            Math.PI*2
+
+        );
+
+        ctx.fill();
+
+        /* 눈 */
+
+        ctx.fillStyle="#ff3972";
+
+        ctx.shadowBlur=12;
+
+        ctx.shadowColor="#ff3972";
+
+        ctx.fillRect(
+
+            8,
+
+            11,
+
+            8,
+
+            4
+
+        );
+
+        ctx.fillRect(
+
+            23,
+
+            11,
+
+            8,
+
+            4
+
+        );
+
+        ctx.shadowBlur=0;
+
+        /* 검 */
+
+        ctx.strokeStyle="#ff3972";
+
+        ctx.lineWidth=4;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+
+            30,
+
+            30
+
+        );
+
+        ctx.lineTo(
+
+            52,
+
+            8
+
+        );
+
+        ctx.stroke();
+
+        /* HP */
+
+        ctx.fillStyle="#222";
+
+        ctx.fillRect(
+
+            0,
+
+            -12,
+
+            40,
+
+            5
+
+        );
+
+        ctx.fillStyle="#ff3972";
+
+        ctx.fillRect(
+
+            0,
+
+            -12,
+
+            40*(e.hp/e.maxHp),
+
+            5
+
+        );
+
+        ctx.restore();
+
+    }
+
+}
+
+/* =========================
+
+   스킬 이펙트 그리기
+
+========================= */
+
+function drawSkills(){
+
+    for(const s of skillEffect){
+
+        ctx.save();
+
+        ctx.translate(
+
+            s.x-cameraX,
+
+            s.y
+
+        );
+
+        if(s.type==="slash"){
+
+            ctx.strokeStyle="#00eaff";
+
+            ctx.shadowBlur=20;
+
+            ctx.shadowColor="#00eaff";
+
+            ctx.lineWidth=6;
+
+            ctx.beginPath();
+
+            ctx.arc(
+
+                0,
+
+                0,
+
+                35,
+
+                -.8,
+
+                .8
+
+            );
+
+            ctx.stroke();
+
+        }
+
+        if(s.type==="shuriken"){
+
+            ctx.strokeStyle="#ffffff";
+
+            ctx.shadowBlur=15;
+
+            ctx.shadowColor="#00eaff";
+
+            ctx.lineWidth=4;
+
+            ctx.rotate(
+
+                Date.now()*.02
+
+            );
+
+            for(let i=0;i<4;i++){
+
+                ctx.rotate(
+
+                    Math.PI/2
+
+                );
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+
+                    0,
+
+                    0
+
+                );
+
+                ctx.lineTo(
+
+                    22,
+
+                    0
+
+                );
+
+                ctx.stroke();
+
+            }
+
+        }
+
+        if(s.type==="ultimate"){
+
+            ctx.fillStyle="#00eaff";
+
+            ctx.shadowBlur=25;
+
+            ctx.shadowColor="#00eaff";
+
+            ctx.beginPath();
+
+            ctx.arc(
+
+                0,
+
+                0,
+
+                8+s.life*.5,
+
+                0,
+
+                Math.PI*2
+
+            );
+
+            ctx.fill();
+
+        }
+
+        ctx.restore();
+
+    }
+
+}
+
+/* =========================
+
+   강화된 UPDATE
+
+========================= */
+
+function update(){
+
+    if(!running)
+
+        return;
+
+    updatePlayer();
+
+    updateEnemies();
+
+    updateSkills();
+
+    updateParticles();
+
+    score =
+
+        Math.max(
+
+            score,
+
+            Math.floor(player.x/10)
+
+        );
+
+    document.getElementById(
+
+        "score"
+
+    ).textContent=score;
+
+    document.getElementById(
+
+        "hp"
+
+    ).style.width=
+
+        player.hp+"%";
+
+}
+
+/* =========================
+
+   강화된 DRAW
+
+========================= */
+
+function draw(){
+
+    drawBackground();
+
+    drawWorld();
+
+    drawWalls();
+
+    drawEnemies();
+
+    drawSkills();
+
+    drawPlayer();
+
+    drawParticles();
+
+}
+
+/* =========================
+
+   시작
+
+========================= */
+
+document.getElementById(
+
+    "start"
+
+).addEventListener(
+
+    "click",
+
+    ()=>{
+
+        running=true;
+
+        createWorld();
+
+        skillBox.style.display="flex";
+
+        document.getElementById(
+
+            "menu"
+
+        ).style.display="none";
+
+        document.getElementById(
+
+            "hud"
+
+        ).style.display="flex";
+
+        document.getElementById(
+
+            "controls"
+
+        ).style.display="block";
+
+    }
+
+);
+
+/* =========================
+
+   게임 시작
+
+========================= */
+
+createWorld();
+
+loop();
