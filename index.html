@@ -34,7 +34,7 @@ html,body{
 
   overflow:hidden;
 
-  background:#02040a;
+  background:#03050c;
 
   touch-action:none;
 
@@ -68,7 +68,7 @@ canvas{
 
   justify-content:center;
 
-  background:radial-gradient(circle,#162c48,#02040a 75%);
+  background:radial-gradient(circle,#142c49,#02040a 75%);
 
 }
 
@@ -76,7 +76,7 @@ canvas{
 
   width:88%;
 
-  max-width:460px;
+  max-width:470px;
 
   padding:32px;
 
@@ -214,13 +214,13 @@ h1{
 
   position:absolute;
 
-  width:70px;
+  width:68px;
 
-  height:70px;
+  height:68px;
 
   border-radius:50%;
 
-  border:2px solid #ffffff33;
+  border:2px solid #ffffff35;
 
   background:#061027dd;
 
@@ -232,7 +232,7 @@ h1{
 
   justify-content:center;
 
-  font-size:25px;
+  font-size:24px;
 
   font-weight:bold;
 
@@ -250,7 +250,7 @@ h1{
 
 #right{
 
-  left:98px;
+  left:95px;
 
   bottom:18px;
 
@@ -280,11 +280,11 @@ h1{
 
   right:58px;
 
-  bottom:98px;
+  bottom:96px;
 
-  width:55px;
+  width:54px;
 
-  height:55px;
+  height:54px;
 
   font-size:10px;
 
@@ -302,7 +302,7 @@ h1{
 
   right:15px;
 
-  bottom:170px;
+  bottom:165px;
 
   gap:7px;
 
@@ -428,6 +428,30 @@ addEventListener("resize",resize);
 
 resize();
 
+/* =========================
+
+   CHARACTER IMAGE
+
+========================= */
+
+const characterImage=new Image();
+
+characterImage.src="character.png";
+
+let characterLoaded=false;
+
+characterImage.onload=function(){
+
+  characterLoaded=true;
+
+};
+
+/* =========================
+
+   INPUT
+
+========================= */
+
 const keys={
 
   left:false,
@@ -444,11 +468,11 @@ const keys={
 
 let jumpPressed=false;
 
-function bind(id,key){
+function bindButton(id,key){
 
-  const button=document.getElementById(id);
+  const b=document.getElementById(id);
 
-  button.addEventListener("pointerdown",function(e){
+  b.addEventListener("pointerdown",function(e){
 
     e.preventDefault();
 
@@ -460,9 +484,15 @@ function bind(id,key){
 
     }
 
+    if(key==="attack"){
+
+      attack();
+
+    }
+
   });
 
-  button.addEventListener("pointerup",function(e){
+  b.addEventListener("pointerup",function(e){
 
     e.preventDefault();
 
@@ -470,7 +500,7 @@ function bind(id,key){
 
   });
 
-  button.addEventListener("pointercancel",function(){
+  b.addEventListener("pointercancel",function(){
 
     keys[key]=false;
 
@@ -478,15 +508,15 @@ function bind(id,key){
 
 }
 
-bind("left","left");
+bindButton("left","left");
 
-bind("right","right");
+bindButton("right","right");
 
-bind("jump","jump");
+bindButton("jump","jump");
 
-bind("attack","attack");
+bindButton("attack","attack");
 
-bind("dash","dash");
+bindButton("dash","dash");
 
 addEventListener("keydown",function(e){
 
@@ -516,7 +546,7 @@ addEventListener("keydown",function(e){
 
   if(e.code==="KeyJ"){
 
-    keys.attack=true;
+    attack();
 
   }
 
@@ -566,12 +596,6 @@ addEventListener("keyup",function(e){
 
   }
 
-  if(e.code==="KeyJ"){
-
-    keys.attack=false;
-
-  }
-
   if(e.code==="ShiftLeft"){
 
     keys.dash=false;
@@ -579,6 +603,12 @@ addEventListener("keyup",function(e){
   }
 
 });
+
+/* =========================
+
+   GAME DATA
+
+========================= */
 
 let running=false;
 
@@ -592,35 +622,35 @@ let particles=[];
 
 let effects=[];
 
-let slashCooldown=0;
+/* =========================
 
-let shurikenCooldown=0;
+   PLAYER
 
-let ultimateCooldown=0;
+========================= */
 
 const player={
 
-  x:250,
+  x:260,
 
   y:100,
 
-  w:82,
+  w:86,
 
-  h:120,
+  h:118,
 
   vx:0,
 
   vy:0,
 
-  maxSpeed:4.5,
+  maxSpeed:4.2,
 
-  acceleration:.42,
+  acceleration:.38,
 
-  friction:.78,
+  friction:.82,
+
+  gravity:.52,
 
   jumpPower:10,
-
-  hp:100,
 
   ground:false,
 
@@ -634,41 +664,65 @@ const player={
 
   direction:1,
 
-  attack:0,
+  attackTimer:0,
 
-  dash:0,
+  attackFrame:0,
+
+  slashTimer:0,
+
+  dashTimer:0,
+
+  dashCooldown:0,
 
   invincible:0,
 
   walkTime:0,
 
-  flip:0,
+  flipAngle:0,
 
-  wallJumpTimer:0
+  flipActive:false,
+
+  hurtTimer:0
 
 };
 
-function createEnemies(){
+/* =========================
 
-  enemies=[];
+   CONSTANT WORLD
 
-  for(let i=0;i<100;i++){
+========================= */
 
-    enemies.push({
+const FLOOR_HEIGHT=230;
 
-      x:900+i*520,
+function floorY(){
 
-      y:H-332,
+  return H-FLOOR_HEIGHT;
 
-      w:72,
+}
 
-      h:82,
+/* =========================
 
-      hp:100,
+   WALLS
 
-      maxHp:100,
+========================= */
 
-      speed:1
+const wallList=[];
+
+function createWalls(){
+
+  wallList.length=0;
+
+  for(let i=0;i<60;i++){
+
+    wallList.push({
+
+      x:650+i*850,
+
+      y:floorY()-250,
+
+      w:36,
+
+      h:250
 
     });
 
@@ -676,7 +730,57 @@ function createEnemies(){
 
 }
 
-function particle(x,y,type){
+/* =========================
+
+   ENEMIES
+
+========================= */
+
+function createEnemies(){
+
+  enemies=[];
+
+  for(let i=0;i<80;i++){
+
+    enemies.push({
+
+      x:1000+i*600,
+
+      y:floorY()-92,
+
+      w:74,
+
+      h:92,
+
+      vx:0,
+
+      hp:100,
+
+      maxHp:100,
+
+      speed:0.8,
+
+      attackTimer:0,
+
+      hitTimer:0,
+
+      deathTimer:0,
+
+      alive:true
+
+    });
+
+  }
+
+}
+
+/* =========================
+
+   PARTICLES
+
+========================= */
+
+function particle(x,y,type="normal"){
 
   particles.push({
 
@@ -690,7 +794,7 @@ function particle(x,y,type){
 
     life:30,
 
-    type:type||"normal"
+    type:type
 
   });
 
@@ -714,6 +818,52 @@ function updateParticles(){
 
 }
 
+/* =========================
+
+   BASIC ATTACK
+
+========================= */
+
+function attack(){
+
+  if(player.attackTimer>0){
+
+    return;
+
+  }
+
+  player.attackTimer=28;
+
+  player.attackFrame=0;
+
+  effects.push({
+
+    x:player.x+player.w/2,
+
+    y:player.y+player.h*.42,
+
+    vx:player.direction*5,
+
+    vy:0,
+
+    life:20,
+
+    type:"basicSlash",
+
+    frame:0
+
+  });
+
+}
+
+/* =========================
+
+   SKILL 1
+
+========================= */
+
+let slashCooldown=0;
+
 function useSlash(){
 
   if(slashCooldown>0){
@@ -722,31 +872,39 @@ function useSlash(){
 
   }
 
-  slashCooldown=45;
+  slashCooldown=80;
 
-  player.attack=22;
+  player.slashTimer=30;
 
-  for(let i=0;i<16;i++){
+  for(let i=0;i<20;i++){
 
     effects.push({
 
-      x:player.x+player.direction*55,
+      x:player.x+player.direction*50,
 
-      y:player.y+55,
+      y:player.y+50,
 
-      vx:player.direction*(2+Math.random()*6),
+      vx:player.direction*(3+Math.random()*6),
 
-      vy:(Math.random()-.5)*6,
+      vy:(Math.random()-.5)*7,
 
-      life:25,
+      life:35,
 
-      type:"slash"
+      type:"slashSkill"
 
     });
 
   }
 
 }
+
+/* =========================
+
+   SKILL 2
+
+========================= */
+
+let shurikenCooldown=0;
 
 function useShuriken(){
 
@@ -756,25 +914,33 @@ function useShuriken(){
 
   }
 
-  shurikenCooldown=90;
+  shurikenCooldown=110;
 
   effects.push({
 
     x:player.x+player.direction*55,
 
-    y:player.y+45,
+    y:player.y+42,
 
-    vx:player.direction*10,
+    vx:player.direction*11,
 
     vy:0,
 
-    life:100,
+    life:110,
 
     type:"shuriken"
 
   });
 
 }
+
+/* =========================
+
+   ULTIMATE
+
+========================= */
+
+let ultimateCooldown=0;
 
 function useUltimate(){
 
@@ -784,25 +950,25 @@ function useUltimate(){
 
   }
 
-  ultimateCooldown=300;
+  ultimateCooldown=360;
 
-  player.invincible=90;
+  player.invincible=100;
 
-  for(let i=0;i<70;i++){
+  for(let i=0;i<80;i++){
 
     effects.push({
 
       x:player.x+(Math.random()-.5)*500,
 
-      y:player.y+(Math.random()-.5)*300,
+      y:player.y+(Math.random()-.5)*350,
 
-      vx:(Math.random()-.5)*8,
+      vx:(Math.random()-.5)*9,
 
-      vy:(Math.random()-.5)*8,
+      vy:(Math.random()-.5)*9,
 
-      life:60,
+      life:65,
 
-      type:"ult"
+      type:"ultimate"
 
     });
 
@@ -810,9 +976,15 @@ function useUltimate(){
 
   for(const e of enemies){
 
-    if(Math.abs(e.x-player.x)<350){
+    if(
 
-      e.hp-=150;
+      e.alive &&
+
+      Math.abs(e.x-player.x)<400
+
+    ){
+
+      e.hp-=180;
 
     }
 
@@ -820,47 +992,99 @@ function useUltimate(){
 
 }
 
-document.getElementById("skill1")
+/* =========================
 
-.addEventListener("pointerdown",useSlash);
+   COLLISION
 
-document.getElementById("skill2")
+========================= */
 
-.addEventListener("pointerdown",useShuriken);
+function isInsideWall(x,y,w,h,wall){
 
-document.getElementById("skill3")
+  return(
 
-.addEventListener("pointerdown",useUltimate);
+    x<wall.x+wall.w &&
 
-function checkWall(){
+    x+w>wall.x &&
+
+    y<wall.y+wall.h &&
+
+    y+h>wall.y
+
+  );
+
+}
+
+function handleWallCollision(oldX){
 
   player.wall=false;
 
   player.wallSide=0;
 
-  const wallSpacing=520;
+  for(const wall of wallList){
 
-  for(let i=1;i<1000;i++){
+    if(!isInsideWall(
 
-    const wx=i*wallSpacing+300;
+      player.x,
 
-    if(
+      player.y,
 
-      player.x+player.w>wx &&
+      player.w,
 
-      player.x<wx+32 &&
+      player.h,
 
-      player.y+player.h>H-500 &&
+      wall
 
-      player.y<H-250
+    )){
 
-    ){
+      continue;
+
+    }
+
+    if(oldX+player.w<=wall.x){
+
+      player.x=wall.x-player.w;
+
+      player.vx=0;
 
       player.wall=true;
 
       player.wallSide=1;
 
-      return;
+    }
+
+    else if(oldX>=wall.x+wall.w){
+
+      player.x=wall.x+wall.w;
+
+      player.vx=0;
+
+      player.wall=true;
+
+      player.wallSide=-1;
+
+    }
+
+    else{
+
+      if(player.direction>0){
+
+        player.x=wall.x-player.w;
+
+        player.wallSide=1;
+
+      }
+
+      else{
+
+        player.x=wall.x+wall.w;
+
+        player.wallSide=-1;
+
+      }
+
+      player.vx=0;
+
+      player.wall=true;
 
     }
 
@@ -868,7 +1092,73 @@ function checkWall(){
 
 }
 
+/* =========================
+
+   JUMP
+
+========================= */
+
+function doJump(){
+
+  if(player.wall){
+
+    player.vy=-8.5;
+
+    player.vx=-player.wallSide*6;
+
+    player.wall=false;
+
+    player.ground=false;
+
+    player.jumps=1;
+
+    player.flipActive=true;
+
+    player.flipAngle=0;
+
+    return;
+
+  }
+
+  if(player.ground){
+
+    player.vy=-player.jumpPower;
+
+    player.ground=false;
+
+    player.jumps=1;
+
+    player.flipActive=true;
+
+    player.flipAngle=0;
+
+    return;
+
+  }
+
+  if(player.jumps<player.maxJumps){
+
+    player.vy=-9;
+
+    player.jumps++;
+
+    player.flipActive=true;
+
+    player.flipAngle=0;
+
+  }
+
+}
+
+/* =========================
+
+   PLAYER UPDATE
+
+========================= */
+
 function updatePlayer(){
+
+  const oldX=player.x;
 
   let move=0;
 
@@ -890,7 +1180,7 @@ function updatePlayer(){
 
     player.direction=move;
 
-    player.walkTime+=Math.abs(player.vx)*.16;
+    player.walkTime+=Math.abs(player.vx)*.18;
 
   }
 
@@ -908,73 +1198,39 @@ function updatePlayer(){
 
   );
 
-  checkWall();
-
   if(jumpPressed){
 
-    if(player.wall){
+    doJump();
 
-      player.vy=-8;
-
-      player.vx=-player.direction*6;
-
-      player.wallJumpTimer=15;
-
-      player.jumps=1;
-
-      player.wall=false;
-
-    }
-
-    else if(player.ground){
-
-      player.vy=-player.jumpPower;
-
-      player.ground=false;
-
-      player.jumps=1;
-
-      player.flip=0;
-
-    }
-
-    else if(player.jumps<player.maxJumps){
-
-      player.vy=-9;
-
-      player.jumps++;
-
-      player.flip=0;
-
-    }
+    jumpPressed=false;
 
   }
-
-  jumpPressed=false;
 
   if(player.wall && !player.ground){
 
-    if(player.vy>1){
+    if(player.vy>1.5){
 
-      player.vy=.65;
-
-    }
-
-    if(keys.jump){
-
-      player.vy=-7;
+      player.vy=1.5;
 
     }
 
   }
 
-  if(keys.dash && player.dash<=0){
+  else{
 
-    player.vx=player.direction*9;
+    player.vy+=player.gravity;
 
-    player.vy=0;
+  }
 
-    player.dash=16;
+  if(keys.dash && player.dashCooldown<=0){
+
+    player.dashTimer=14;
+
+    player.dashCooldown=50;
+
+    player.vx=player.direction*10;
+
+    player.vy*=.2;
 
     player.invincible=25;
 
@@ -986,21 +1242,29 @@ function updatePlayer(){
 
   }
 
-  if(keys.attack && player.attack<=0){
+  if(player.dashTimer>0){
 
-    useSlash();
-
-  }
-
-  if(player.attack>0){
-
-    player.attack--;
+    player.dashTimer--;
 
   }
 
-  if(player.dash>0){
+  if(player.dashCooldown>0){
 
-    player.dash--;
+    player.dashCooldown--;
+
+  }
+
+  if(player.attackTimer>0){
+
+    player.attackTimer--;
+
+    player.attackFrame++;
+
+  }
+
+  if(player.slashTimer>0){
+
+    player.slashTimer--;
 
   }
 
@@ -1010,45 +1274,19 @@ function updatePlayer(){
 
   }
 
-  if(player.wallJumpTimer>0){
-
-    player.wallJumpTimer--;
-
-  }
-
-  if(slashCooldown>0){
-
-    slashCooldown--;
-
-  }
-
-  if(shurikenCooldown>0){
-
-    shurikenCooldown--;
-
-  }
-
-  if(ultimateCooldown>0){
-
-    ultimateCooldown--;
-
-  }
-
-  if(!player.wall){
-
-    player.vy+=.55;
-
-  }
-
   player.x+=player.vx;
+
+  handleWallCollision(oldX);
 
   player.y+=player.vy;
 
-  const floor=H-250;
+  /* 바닥 충돌 */
 
-  if(player.y+player.h>=floor){
+  const ground=floorY();
 
-    player.y=floor-player.h;
+  if(player.y+player.h>=ground){
+
+    player.y=ground-player.h;
 
     player.vy=0;
 
@@ -1060,7 +1298,9 @@ function updatePlayer(){
 
     player.ground=true;
 
-    player.flip=0;
+    player.flipActive=false;
+
+    player.flipAngle=0;
 
   }
 
@@ -1070,17 +1310,57 @@ function updatePlayer(){
 
   }
 
-  if(player.y>H+200){
+  /* 벽에 붙어있는 동안 */
 
-    player.y=100;
+  if(player.wall && !player.ground){
 
-    player.vy=0;
+    if(player.vy>1.5){
 
-    player.hp-=10;
+      player.vy=1.5;
+
+    }
 
   }
 
-  cameraX=player.x-W*.3;
+  /* 플립 */
+
+  if(player.flipActive){
+
+    player.flipAngle+=.35;
+
+    if(player.flipAngle>=Math.PI*2){
+
+      player.flipAngle=Math.PI*2;
+
+      player.flipActive=false;
+
+    }
+
+  }
+
+  /* 떨어짐 */
+
+  if(player.y>H+300){
+
+    player.hp-=15;
+
+    player.x=Math.max(
+
+      100,
+
+      player.x-300
+
+    );
+
+    player.y=ground-player.h;
+
+    player.vy=0;
+
+    player.jumps=0;
+
+  }
+
+  cameraX=player.x-W*.32;
 
   if(cameraX<0){
 
@@ -1090,11 +1370,33 @@ function updatePlayer(){
 
 }
 
+/* =========================
+
+   ENEMY UPDATE
+
+========================= */
+
 function updateEnemies(){
 
   for(const e of enemies){
 
+    if(!e.alive){
+
+      continue;
+
+    }
+
     if(e.hp<=0){
+
+      e.deathTimer++;
+
+      if(e.deathTimer>30){
+
+        e.alive=false;
+
+        score+=150;
+
+      }
 
       continue;
 
@@ -1104,41 +1406,69 @@ function updateEnemies(){
 
     const d=Math.abs(dx);
 
-    if(d<600){
+    if(d<550){
 
       e.x+=Math.sign(dx)*e.speed;
 
     }
 
-    if(
+    if(e.attackTimer>0){
 
-      d<90 &&
-
-      Math.abs(player.y-e.y)<100
-
-    ){
-
-      if(player.invincible<=0){
-
-        player.hp-=8;
-
-        player.invincible=40;
-
-      }
+      e.attackTimer--;
 
     }
 
     if(
 
-      player.attack>0 &&
+      d<100 &&
 
-      d<130 &&
+      Math.abs(player.y-e.y)<110 &&
 
-      Math.abs(player.y-e.y)<100
+      e.attackTimer<=0
 
     ){
 
-      e.hp-=30;
+      if(player.invincible<=0){
+
+        player.hp-=10;
+
+        player.invincible=45;
+
+        player.hurtTimer=15;
+
+      }
+
+      e.attackTimer=70;
+
+    }
+
+    if(
+
+      player.attackTimer>5 &&
+
+      d<135 &&
+
+      Math.abs(player.y-e.y)<120
+
+    ){
+
+      e.hp-=35;
+
+      e.hitTimer=10;
+
+    }
+
+    if(
+
+      player.slashTimer>0 &&
+
+      d<180 &&
+
+      Math.abs(player.y-e.y)<140
+
+    ){
+
+      e.hp-=8;
 
     }
 
@@ -1154,7 +1484,7 @@ function updateEnemies(){
 
       ){
 
-        e.hp-=50;
+        e.hp-=55;
 
         s.life=0;
 
@@ -1162,21 +1492,21 @@ function updateEnemies(){
 
     }
 
-    if(e.hp<=0){
+    if(e.hitTimer>0){
 
-      score+=150;
-
-      for(let i=0;i<20;i++){
-
-        particle(e.x,e.y,"enemy");
-
-      }
+      e.hitTimer--;
 
     }
 
   }
 
 }
+
+/* =========================
+
+   EFFECT UPDATE
+
+========================= */
 
 function updateEffects(){
 
@@ -1188,25 +1518,57 @@ function updateEffects(){
 
     s.life--;
 
+    if(s.type==="shuriken"){
+
+      s.vy+=.03;
+
+    }
+
   }
 
   effects=effects.filter(s=>s.life>0);
 
 }
 
+/* =========================
+
+   BACKGROUND
+
+========================= */
+
 function drawBackground(){
 
-  const g=ctx.createLinearGradient(0,0,0,H);
+  const g=ctx.createLinearGradient(
+
+    0,
+
+    0,
+
+    0,
+
+    H
+
+  );
 
   g.addColorStop(0,"#050817");
 
-  g.addColorStop(1,"#170b25");
+  g.addColorStop(1,"#160b25");
 
   ctx.fillStyle=g;
 
-  ctx.fillRect(0,0,W,H);
+  ctx.fillRect(
 
-  ctx.fillStyle="#dfffff";
+    0,
+
+    0,
+
+    W,
+
+    H
+
+  );
+
+  ctx.fillStyle="#e8ffff";
 
   ctx.shadowBlur=25;
 
@@ -1232,13 +1594,15 @@ function drawBackground(){
 
   ctx.shadowBlur=0;
 
-  for(let i=0;i<40;i++){
+  for(let i=0;i<35;i++){
 
     const x=
 
-      ((i*170-cameraX*.18)%(W+400))-200;
+      ((i*180-cameraX*.16)%(W+400))-200;
 
-    const h=100+(i*73)%300;
+    const h=
+
+      100+(i*67)%300;
 
     ctx.fillStyle=
 
@@ -1252,9 +1616,9 @@ function drawBackground(){
 
       x,
 
-      H-250-h,
+      floorY()-h,
 
-      110,
+      120,
 
       h
 
@@ -1264,9 +1628,15 @@ function drawBackground(){
 
 }
 
-function drawGround(){
+/* =========================
 
-  const floor=H-250;
+   FLOOR
+
+========================= */
+
+function drawFloor(){
+
+  const y=floorY();
 
   ctx.fillStyle="#080d18";
 
@@ -1274,11 +1644,11 @@ function drawGround(){
 
     0,
 
-    floor,
+    y,
 
     W,
 
-    250
+    H-y
 
   );
 
@@ -1288,7 +1658,7 @@ function drawGround(){
 
     0,
 
-    floor,
+    y,
 
     W,
 
@@ -1298,7 +1668,7 @@ function drawGround(){
 
   ctx.fillStyle="#00eaff";
 
-  ctx.shadowBlur=15;
+  ctx.shadowBlur=14;
 
   ctx.shadowColor="#00eaff";
 
@@ -1306,7 +1676,7 @@ function drawGround(){
 
     0,
 
-    floor,
+    y,
 
     W,
 
@@ -1330,9 +1700,21 @@ function drawGround(){
 
     ctx.beginPath();
 
-    ctx.moveTo(x,floor+15);
+    ctx.moveTo(
 
-    ctx.lineTo(x,floor+250);
+      x,
+
+      y+15
+
+    );
+
+    ctx.lineTo(
+
+      x,
+
+      H
+
+    );
 
     ctx.stroke();
 
@@ -1340,13 +1722,25 @@ function drawGround(){
 
 }
 
+/* =========================
+
+   WALL DRAW
+
+========================= */
+
 function drawWalls(){
 
-  for(let i=1;i<1000;i++){
+  for(const wall of wallList){
 
-    const wx=i*520+300-cameraX;
+    const x=wall.x-cameraX;
 
-    if(wx<-50 || wx>W+50){
+    if(
+
+      x<-60 ||
+
+      x>W+60
+
+    ){
 
       continue;
 
@@ -1356,13 +1750,13 @@ function drawWalls(){
 
     ctx.fillRect(
 
-      wx,
+      x,
 
-      H-500,
+      wall.y,
 
-      32,
+      wall.w,
 
-      250
+      wall.h
 
     );
 
@@ -1370,35 +1764,61 @@ function drawWalls(){
 
     ctx.lineWidth=3;
 
+    ctx.shadowBlur=12;
+
+    ctx.shadowColor="#00eaff";
+
     ctx.strokeRect(
 
-      wx,
+      x,
 
-      H-500,
+      wall.y,
 
-      32,
+      wall.w,
 
-      250
+      wall.h
 
     );
+
+    ctx.shadowBlur=0;
 
   }
 
 }
 
+/* =========================
+
+   PLAYER DRAW
+
+========================= */
+
 function drawPlayer(){
 
-  const x=player.x-cameraX+player.w/2;
+  const x=
 
-  const y=player.y+player.h/2;
+    player.x-player.w*.15-cameraX;
+
+  const y=player.y;
 
   ctx.save();
 
-  ctx.translate(x,y);
+  ctx.translate(
+
+    x+player.w/2,
+
+    y+player.h/2
+
+  );
 
   if(player.direction<0){
 
     ctx.scale(-1,1);
+
+  }
+
+  if(player.flipActive){
+
+    ctx.rotate(player.flipAngle);
 
   }
 
@@ -1414,157 +1834,169 @@ function drawPlayer(){
 
   }
 
-  if(!player.ground){
+  /*
 
-    player.flip+=.12;
+    실제 character.png가 있으면 사용
 
-    ctx.rotate(player.flip);
+  */
+
+  if(characterLoaded){
+
+    const size=125;
+
+    ctx.drawImage(
+
+      characterImage,
+
+      -size/2,
+
+      -size/2,
+
+      size,
+
+      size
+
+    );
 
   }
 
-  const step=
+  else{
 
-    player.ground &&
+    /*
 
-    Math.abs(player.vx)>.3
+      이미지가 아직 없을 때
 
-    ?Math.sin(player.walkTime)*14
+      임시 닌자
+
+    */
+
+    drawFallbackNinja();
+
+  }
+
+  /*
+
+    공격 애니메이션
+
+  */
+
+  if(player.attackTimer>0){
+
+    const progress=
+
+      1-player.attackTimer/28;
+
+    ctx.save();
+
+    ctx.rotate(
+
+      -1.1+progress*2.4
+
+    );
+
+    ctx.strokeStyle="white";
+
+    ctx.lineWidth=8;
+
+    ctx.shadowBlur=25;
+
+    ctx.shadowColor="#00eaff";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+
+      25,
+
+      -10
+
+    );
+
+    ctx.lineTo(
+
+      100,
+
+      -65
+
+    );
+
+    ctx.stroke();
+
+    ctx.restore();
+
+  }
+
+  /*
+
+    벽타기 이펙트
+
+  */
+
+  if(player.wall){
+
+    ctx.strokeStyle="#00eaff";
+
+    ctx.lineWidth=4;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+
+      -55,
+
+      -25
+
+    );
+
+    ctx.lineTo(
+
+      -85,
+
+      -40
+
+    );
+
+    ctx.moveTo(
+
+      -55,
+
+      5
+
+    );
+
+    ctx.lineTo(
+
+      -85,
+
+      -5
+
+    );
+
+    ctx.stroke();
+
+  }
+
+  ctx.restore();
+
+}
+
+/* =========================
+
+   FALLBACK CHARACTER
+
+========================= */
+
+function drawFallbackNinja(){
+
+  const walk=
+
+    player.ground
+
+    ?Math.sin(player.walkTime)*8
 
     :0;
 
-  if(player.dash>0){
-
-    for(let i=1;i<5;i++){
-
-      ctx.globalAlpha=.12;
-
-      ctx.fillStyle="#00eaff";
-
-      ctx.beginPath();
-
-      ctx.arc(
-
-        -i*18,
-
-        0,
-
-        32,
-
-        0,
-
-        Math.PI*2
-
-      );
-
-      ctx.fill();
-
-    }
-
-    ctx.globalAlpha=1;
-
-  }
-
-  /* 다리 */
-
-  ctx.strokeStyle="#020306";
-
-  ctx.lineWidth=16;
-
-  ctx.lineCap="round";
-
-  ctx.beginPath();
-
-  ctx.moveTo(-18,25);
-
-  ctx.lineTo(-30+step,70);
-
-  ctx.moveTo(18,25);
-
-  ctx.lineTo(30-step,70);
-
-  ctx.stroke();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.beginPath();
-
-  ctx.moveTo(-18,25);
-
-  ctx.lineTo(-30+step,70);
-
-  ctx.moveTo(18,25);
-
-  ctx.lineTo(30-step,70);
-
-  ctx.stroke();
-
-  /* 몸 */
-
-  ctx.fillStyle="#020306";
-
-  ctx.beginPath();
-
-  ctx.roundRect(
-
-    -32,
-
-    -35,
-
-    64,
-
-    70,
-
-    18
-
-  );
-
-  ctx.fill();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.stroke();
-
-  /* 팔 */
-
-  ctx.strokeStyle="#020306";
-
-  ctx.lineWidth=15;
-
-  ctx.beginPath();
-
-  ctx.moveTo(-27,-20);
-
-  ctx.lineTo(-60,10+step*.5);
-
-  ctx.moveTo(27,-20);
-
-  ctx.lineTo(60,10-step*.5);
-
-  ctx.stroke();
-
-  ctx.strokeStyle="#00eaff";
-
-  ctx.lineWidth=3;
-
-  ctx.beginPath();
-
-  ctx.moveTo(-27,-20);
-
-  ctx.lineTo(-60,10+step*.5);
-
-  ctx.moveTo(27,-20);
-
-  ctx.lineTo(60,10-step*.5);
-
-  ctx.stroke();
-
-  /* 머리 */
-
-  ctx.fillStyle="#020306";
+  ctx.fillStyle="#030509";
 
   ctx.beginPath();
 
@@ -1572,9 +2004,9 @@ function drawPlayer(){
 
     0,
 
-    -57,
+    -42,
 
-    36,
+    31,
 
     0,
 
@@ -1590,147 +2022,155 @@ function drawPlayer(){
 
   ctx.stroke();
 
-  /* 눈 */
+  ctx.fillStyle="#9fffff";
 
-  ctx.fillStyle="#aaffff";
-
-  ctx.shadowBlur=20;
+  ctx.shadowBlur=15;
 
   ctx.shadowColor="#00eaff";
 
   ctx.fillRect(
 
-    -22,
+    -20,
 
-    -63,
+    -47,
 
-    16,
+    15,
 
-    7
+    6
 
   );
 
   ctx.fillRect(
 
-    6,
+    5,
 
-    -63,
+    -47,
 
-    16,
+    15,
 
-    7
+    6
 
   );
 
   ctx.shadowBlur=0;
 
-  /* 스카프 */
+  ctx.fillStyle="#020306";
 
-  ctx.fillStyle="#00d9ff";
+  ctx.fillRect(
 
-  ctx.beginPath();
+    -28,
 
-  ctx.moveTo(-27,-30);
+    -15,
 
-  ctx.lineTo(-65,-15);
+    56,
 
-  ctx.lineTo(-95,12);
+    58
 
-  ctx.lineTo(-48,-3);
-
-  ctx.fill();
-
-  /* 검 */
-
-  ctx.strokeStyle="white";
-
-  ctx.lineWidth=8;
-
-  ctx.beginPath();
-
-  ctx.moveTo(35,-5);
-
-  ctx.lineTo(95,-60);
-
-  ctx.stroke();
+  );
 
   ctx.strokeStyle="#00eaff";
 
-  ctx.lineWidth=3;
+  ctx.strokeRect(
+
+    -28,
+
+    -15,
+
+    56,
+
+    58
+
+  );
+
+  ctx.strokeStyle="#020306";
+
+  ctx.lineWidth=14;
 
   ctx.beginPath();
 
-  ctx.moveTo(35,-5);
+  ctx.moveTo(
 
-  ctx.lineTo(95,-60);
+    -20,
+
+    -5
+
+  );
+
+  ctx.lineTo(
+
+    -52,
+
+    20+walk
+
+  );
+
+  ctx.moveTo(
+
+    20,
+
+    -5
+
+  );
+
+  ctx.lineTo(
+
+    52,
+
+    20-walk
+
+  );
 
   ctx.stroke();
 
-  /* 공격 */
+  ctx.beginPath();
 
-  if(player.attack>0){
+  ctx.moveTo(
 
-    ctx.strokeStyle="#00eaff";
+    -14,
 
-    ctx.shadowBlur=30;
+    40
 
-    ctx.shadowColor="#00eaff";
+  );
 
-    ctx.lineWidth=9;
+  ctx.lineTo(
 
-    ctx.beginPath();
+    -28+walk,
 
-    ctx.arc(
+    75
 
-      40,
+  );
 
-      0,
+  ctx.moveTo(
 
-      80,
+    14,
 
-      -.9,
+    40
 
-      .9
+  );
 
-    );
+  ctx.lineTo(
 
-    ctx.stroke();
+    28-walk,
 
-    ctx.shadowBlur=0;
+    75
 
-  }
+  );
 
-  /* 벽타기 */
-
-  if(player.wall){
-
-    ctx.strokeStyle="#00eaff";
-
-    ctx.lineWidth=4;
-
-    ctx.beginPath();
-
-    ctx.moveTo(-45,-35);
-
-    ctx.lineTo(-75,-50);
-
-    ctx.moveTo(-45,0);
-
-    ctx.lineTo(-75,-10);
-
-    ctx.stroke();
-
-  }
-
-  ctx.restore();
+  ctx.stroke();
 
 }
+
+/* =========================
+
+   ENEMY DRAW
+
+========================= */
 
 function drawEnemies(){
 
   for(const e of enemies){
 
-    if(e.hp<=0){
+    if(!e.alive){
 
       continue;
 
@@ -1742,19 +2182,37 @@ function drawEnemies(){
 
     ctx.save();
 
-    ctx.translate(x,y);
+    ctx.translate(
+
+      x+e.w/2,
+
+      y+e.h/2
+
+    );
+
+    if(e.hitTimer>0){
+
+      ctx.translate(
+
+        (Math.random()-.5)*5,
+
+        0
+
+      );
+
+    }
 
     ctx.fillStyle="#05070c";
 
     ctx.fillRect(
 
-      5,
+      -35,
 
-      15,
+      -15,
 
-      60,
+      70,
 
-      70
+      80
 
     );
 
@@ -1764,27 +2222,25 @@ function drawEnemies(){
 
     ctx.strokeRect(
 
-      5,
+      -35,
 
-      15,
+      -15,
 
-      60,
+      70,
 
-      70
+      80
 
     );
-
-    ctx.fillStyle="#05070c";
 
     ctx.beginPath();
 
     ctx.arc(
 
-      35,
+      0,
 
-      5,
+      -35,
 
-      31,
+      32,
 
       0,
 
@@ -1804,25 +2260,25 @@ function drawEnemies(){
 
     ctx.fillRect(
 
-      15,
+      -20,
 
-      0,
+      -42,
 
       14,
 
-      7
+      6
 
     );
 
     ctx.fillRect(
 
-      42,
+      6,
 
-      0,
+      -42,
 
       14,
 
-      7
+      6
 
     );
 
@@ -1834,21 +2290,33 @@ function drawEnemies(){
 
     ctx.beginPath();
 
-    ctx.moveTo(55,40);
+    ctx.moveTo(
 
-    ctx.lineTo(90,5);
+      25,
+
+      5
+
+    );
+
+    ctx.lineTo(
+
+      70,
+
+      -40
+
+    );
 
     ctx.stroke();
 
-    ctx.fillStyle="#260814";
+    ctx.fillStyle="#250814";
 
     ctx.fillRect(
 
-      5,
+      -35,
 
-      -30,
+      -65,
 
-      60,
+      70,
 
       7
 
@@ -1858,11 +2326,11 @@ function drawEnemies(){
 
     ctx.fillRect(
 
-      5,
+      -35,
 
-      -30,
+      -65,
 
-      60*(e.hp/e.maxHp),
+      70*(e.hp/e.maxHp),
 
       7
 
@@ -1873,6 +2341,12 @@ function drawEnemies(){
   }
 
 }
+
+/* =========================
+
+   EFFECT DRAW
+
+========================= */
 
 function drawEffects(){
 
@@ -1888,15 +2362,25 @@ function drawEffects(){
 
     );
 
-    if(s.type==="slash"){
+    if(s.type==="basicSlash"){
 
-      ctx.strokeStyle="#00eaff";
+      const p=
+
+        1-s.life/20;
+
+      ctx.rotate(
+
+        -1.3+p*2.6
+
+      );
+
+      ctx.strokeStyle="#ffffff";
+
+      ctx.lineWidth=8;
 
       ctx.shadowBlur=25;
 
       ctx.shadowColor="#00eaff";
-
-      ctx.lineWidth=7;
 
       ctx.beginPath();
 
@@ -1906,7 +2390,37 @@ function drawEffects(){
 
         0,
 
-        50,
+        60,
+
+        -.9,
+
+        .9
+
+      );
+
+      ctx.stroke();
+
+    }
+
+    if(s.type==="slashSkill"){
+
+      ctx.strokeStyle="#00eaff";
+
+      ctx.lineWidth=7;
+
+      ctx.shadowBlur=25;
+
+      ctx.shadowColor="#00eaff";
+
+      ctx.beginPath();
+
+      ctx.arc(
+
+        0,
+
+        0,
+
+        45,
 
         -.9,
 
@@ -1920,15 +2434,19 @@ function drawEffects(){
 
     if(s.type==="shuriken"){
 
+      ctx.rotate(
+
+        Date.now()*.025
+
+      );
+
       ctx.strokeStyle="white";
-
-      ctx.shadowBlur=18;
-
-      ctx.shadowColor="#00eaff";
 
       ctx.lineWidth=4;
 
-      ctx.rotate(Date.now()*.02);
+      ctx.shadowBlur=20;
+
+      ctx.shadowColor="#00eaff";
 
       for(let i=0;i<4;i++){
 
@@ -1936,9 +2454,21 @@ function drawEffects(){
 
         ctx.beginPath();
 
-        ctx.moveTo(0,0);
+        ctx.moveTo(
 
-        ctx.lineTo(30,0);
+          0,
+
+          0
+
+        );
+
+        ctx.lineTo(
+
+          30,
+
+          0
+
+        );
 
         ctx.stroke();
 
@@ -1946,11 +2476,11 @@ function drawEffects(){
 
     }
 
-    if(s.type==="ult"){
+    if(s.type==="ultimate"){
 
       ctx.fillStyle="#00eaff";
 
-      ctx.shadowBlur=25;
+      ctx.shadowBlur=30;
 
       ctx.shadowColor="#00eaff";
 
@@ -1979,6 +2509,12 @@ function drawEffects(){
   }
 
 }
+
+/* =========================
+
+   PARTICLE DRAW
+
+========================= */
 
 function drawParticles(){
 
@@ -2012,6 +2548,12 @@ function drawParticles(){
 
 }
 
+/* =========================
+
+   UPDATE
+
+========================= */
+
 function update(){
 
   if(!running){
@@ -2027,6 +2569,24 @@ function update(){
   updateEffects();
 
   updateParticles();
+
+  if(slashCooldown>0){
+
+    slashCooldown--;
+
+  }
+
+  if(shurikenCooldown>0){
+
+    shurikenCooldown--;
+
+  }
+
+  if(ultimateCooldown>0){
+
+    ultimateCooldown--;
+
+  }
 
   score=Math.max(
 
@@ -2082,7 +2642,7 @@ function update(){
 
     setTimeout(function(){
 
-      alert("MISSION FAILED");
+      alert("MISSION FAILED!");
 
       location.reload();
 
@@ -2092,11 +2652,17 @@ function update(){
 
 }
 
+/* =========================
+
+   DRAW
+
+========================= */
+
 function draw(){
 
   drawBackground();
 
-  drawGround();
+  drawFloor();
 
   drawWalls();
 
@@ -2110,21 +2676,19 @@ function draw(){
 
 }
 
-function loop(){
+/* =========================
 
-  update();
+   START
 
-  draw();
-
-  requestAnimationFrame(loop);
-
-}
+========================= */
 
 document.getElementById("start")
 
 .addEventListener("click",function(){
 
   running=true;
+
+  createWalls();
 
   createEnemies();
 
@@ -2146,7 +2710,21 @@ document.getElementById("start")
 
 });
 
-loop();
+createWalls();
+
+createEnemies();
+
+function gameLoop(){
+
+  update();
+
+  draw();
+
+  requestAnimationFrame(gameLoop);
+
+}
+
+gameLoop();
 
 </script>
 
